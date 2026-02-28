@@ -13,7 +13,14 @@ public enum ErrorCode {
     USER_NOT_EXISTED(1003, "Người dùng không tồn tại", HttpStatus.NOT_FOUND),
     USERNAME_INVALID(1004, "Tên đăng nhập phải có ít nhất 3 ký tự", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID(1005, "Mật khẩu phải có ít nhất 8 ký tự", HttpStatus.BAD_REQUEST),
-    INVALID_DATA(1006, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST);
+    INVALID_DATA(1006, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
+
+    // --- BỔ SUNG MỚI CHO AUTH & IDENTITY ---
+    EMAIL_EXISTED(1007, "Email này đã được đăng ký", HttpStatus.CONFLICT),
+    ROLE_NOT_FOUND(1008, "Lỗi cấu hình: Không tìm thấy vai trò hệ thống", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_TOKEN(1009, "Mã xác thực không hợp lệ hoặc không tồn tại", HttpStatus.BAD_REQUEST),
+    TOKEN_EXPIRED(1010, "Mã xác thực đã hết hạn, vui lòng yêu cầu gửi lại", HttpStatus.BAD_REQUEST),
+    USER_ALREADY_VERIFIED(1011, "Tài khoản này đã được xác thực trước đó", HttpStatus.BAD_REQUEST);
 
 
     private final int code;

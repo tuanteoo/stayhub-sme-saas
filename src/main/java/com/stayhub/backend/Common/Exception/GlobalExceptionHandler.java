@@ -2,6 +2,7 @@ package com.stayhub.backend.Common.Exception;
 
 import com.stayhub.backend.Common.DTO.Response.ResponseError;
 import com.stayhub.backend.Common.Util.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,21 +15,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(value = AppException.class)
-    ResponseEntity<ResponseError> handlingAppException(AppException exception) {
+    public ResponseEntity<ResponseError> handlingAppException(AppException exception) {
         ErrorCode errorCode = exception.getErrorCode();
 
         ResponseError responseError = ResponseError.builder()
                 .timestamp(LocalDateTime.now())
                 .status(errorCode.getStatusCode().value())
-                .error(errorCode.name())
+                .code(errorCode.getCode())
+                .error(errorCode.getStatusCode().getReasonPhrase())
                 .message(errorCode.getMessage())
                 .build();
 
-        return ResponseEntity
-                .status(errorCode.getStatusCode())
-                .body(responseError);
+        return ResponseEntity.status(errorCode.getStatusCode()).body(responseError);
     }
 
     @ExceptionHandler(value = ResourceNotFoundException.class)
@@ -43,20 +44,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseError);
     }
 
-    @ExceptionHandler(value = InvalidDataException.class)
-    ResponseEntity<ResponseError> handlingInvalidDataException(InvalidDataException exception) {
-        ResponseError responseError = ResponseError.builder()
-                .timestamp(LocalDateTime.now())
-                .status(ErrorCode.INVALID_DATA.getStatusCode().value())
-                .error(ErrorCode.INVALID_DATA.name())
-                .message(exception.getMessage())
-                .build();
-
-        return ResponseEntity.status(ErrorCode.INVALID_DATA.getStatusCode()).body(responseError);
-    }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    ResponseEntity<ResponseError> handlingValidationException(MethodArgumentNotValidException exception) {
+    ResponseEntity<ResponseError> handlingMethodArgumentNotValidException(MethodArgumentNotValidException exception) {
         Map<String, String> errors = new HashMap<>();
 
         for (FieldError error : exception.getBindingResult().getFieldErrors()) {
@@ -72,5 +62,19 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(responseError);
+    }
+
+    @ExceptionHandler(value = Exception.class)
+    public ResponseEntity<ResponseError> handlingGlobalException(Exception exception) {
+        log.error("Unhandled Exception: ", exception);
+
+        ResponseError responseError = ResponseError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode().value())
+                .error(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode().getReasonPhrase())
+                .message(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage())
+                .build();
+
+        return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode()).body(responseError);
     }
 }

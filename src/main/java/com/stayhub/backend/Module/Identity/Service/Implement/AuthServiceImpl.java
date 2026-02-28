@@ -4,24 +4,31 @@ import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Util.ErrorCode;
 import com.stayhub.backend.Common.Util.UserStatus;
 import com.stayhub.backend.Common.Util.VerificationType;
+import com.stayhub.backend.Module.Identity.DTO.Request.LoginRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.RegisterGuestRequest;
-import com.stayhub.backend.Module.Identity.Model.Profile;
-import com.stayhub.backend.Module.Identity.Model.Role;
-import com.stayhub.backend.Module.Identity.Model.User;
-import com.stayhub.backend.Module.Identity.Model.VerificationToken;
-import com.stayhub.backend.Module.Identity.Repository.ProfileRepository;
-import com.stayhub.backend.Module.Identity.Repository.RoleRepository;
-import com.stayhub.backend.Module.Identity.Repository.UserRepository;
-import com.stayhub.backend.Module.Identity.Repository.VerificationTokenRepository;
+import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
+import com.stayhub.backend.Module.Identity.Model.*;
+import com.stayhub.backend.Module.Identity.Repository.*;
+import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
+import com.stayhub.backend.Module.Identity.Security.JwtTokenProvider;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Module.Identity.Service.EmailService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -36,6 +43,9 @@ public class AuthServiceImpl implements AuthService {
     private final VerificationTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -118,5 +128,49 @@ public class AuthServiceImpl implements AuthService {
         tokenRepository.save(verificationToken);
 
         return "Xác thực tài khoản thành công. Bạn có thể đăng nhập ngay bây giờ.";
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public LoginResponse login(LoginRequest request) {
+        HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        String ipAddress = httpRequest.getRemoteAddr();
+        String deviceInfo = httpRequest.getHeader("User-Agent");
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        User user = userDetails.getUser();
+
+        String accessToken = jwtTokenProvider.generateAccessToken(authentication);
+
+        String refreshTokenString = UUID.randomUUID().toString();
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(refreshTokenString)
+                .expiryDate(LocalDateTime.now().plusDays(7))
+                .ipAddress(ipAddress)
+                .deviceInfo(deviceInfo)
+                .build();
+        refreshTokenRepository.save(refreshToken);
+
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+
+        return new LoginResponse(
+                accessToken,
+                refreshTokenString,
+                roles,
+                user.getStatus().name()
+        );
     }
 }

@@ -1,7 +1,9 @@
 package com.stayhub.backend.Module.Identity.Controller;
 
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
+import com.stayhub.backend.Module.Identity.DTO.Request.LoginRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.RegisterGuestRequest;
+import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +26,11 @@ public class AuthController {
     public ResponseData<String> verifyAccount(@RequestParam("token") String token) {
         String message = authService.verifyEmailToken(token);
         return new ResponseData<>(HttpStatus.OK.value(), message);
+    }
+
+    @PostMapping("/login")
+    public ResponseData<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        LoginResponse response = authService.login(loginRequest);
+        return new ResponseData<>(HttpStatus.OK.value(), "Đăng nhập thành công", response);
     }
 }

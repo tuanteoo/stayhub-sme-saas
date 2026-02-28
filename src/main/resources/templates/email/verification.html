@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác thực tài khoản</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #0056b3;
+            color: #ffffff;
+            text-align: center;
+            padding: 24px;
+        }
+        .content {
+            padding: 32px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 32px;
+            margin-bottom: 32px;
+        }
+        .verify-button {
+            background-color: #0056b3;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 32px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            color: #777777;
+            text-align: center;
+            padding: 16px;
+            font-size: 12px;
+            border-top: 1px solid #eeeeee;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>Chào mừng đến với Nền tảng StayHub</h2>
+    </div>
+    <div class="content">
+        <p>Xin chào <strong th:text="${name}">Khách hàng</strong>,</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản trên hệ thống của chúng tôi. Để hoàn tất quá trình đăng ký và bắt đầu trải nghiệm các dịch vụ, vui lòng xác thực địa chỉ thư điện tử của bạn bằng cách nhấn vào nút dưới đây:</p>
+
+        <div class="button-container">
+            <a th:href="${url}" class="verify-button">Xác Thực Tài Khoản</a>
+        </div>
+
+        <p>Hoặc bạn có thể sao chép và dán đường dẫn sau vào trình duyệt:</p>
+        <p style="word-break: break-all; color: #0056b3;" th:text="${url}"></p>
+
+        <p>Lưu ý: Đường dẫn này chỉ có hiệu lực trong vòng 24 giờ. Nếu bạn không tạo tài khoản này, xin vui lòng bỏ qua thư.</p>
+        <p>Trân trọng,<br>Đội ngũ hỗ trợ</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2026 StayHub Booking. Mọi quyền được bảo lưu.</p>
+    </div>
+</div>
+</body>
+</html>

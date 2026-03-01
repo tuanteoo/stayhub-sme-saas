@@ -13,19 +13,19 @@ jobs:
       - name: Checkout mã nguồn
         uses: actions/checkout@v3
 
-      - name: Thiết lập Java 17
+      - name: Thiết lập môi trường Java 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Kiểm tra kết nối mạng
+      - name: Kiểm tra kết nối mạng tới AWS
         run: nc -zv -w 5 ${{ secrets.EC2_HOST }} 22
 
-      - name: Đóng gói bằng Maven
+      - name: Đóng gói ứng dụng bằng Maven
         run: mvn clean package -DskipTests
 
-      - name: Đẩy tệp .jar lên AWS
+      - name: Đẩy tệp thực thi lên máy chủ AWS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -35,25 +35,17 @@ jobs:
           target: "/home/ubuntu/app/"
           strip_components: 1
 
-      - name: Thực thi ứng dụng trên AWS
+      - name: Thực thi và khởi động lại dịch vụ trên AWS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 60s
-          command_timeout: 10m
           script: |
             cd /home/ubuntu/app
             
-            pkill -f 'java -jar' || true
-            sleep 10
+            # Đổi tên tệp mới nhất thành tên cố định để dịch vụ nhận diện
+            mv *.jar backend.jar
             
-            if [ -f .env ]; then
-              set -a
-              source .env
-              set +a
-            fi
-            
-            # Sử dụng bash -c bọc câu lệnh và thêm disown ở cuối
-            bash -c "nohup java -jar -Dspring.profiles.active=prod *.jar > app.log 2>&1 < /dev/null & disown"
+            # Yêu cầu hệ điều hành khởi động lại ứng dụng nền
+            sudo systemctl restart backend

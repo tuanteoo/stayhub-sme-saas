@@ -1,5 +1,4 @@
 name: Deploy Spring Boot to AWS (Develop)
-run: nc -zv ${{ secrets.EC2_HOST }} 22
 
 on:
   push:
@@ -19,6 +18,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Kiểm tra kết nối mạng tới AWS
+        run: nc -zv ${{ secrets.EC2_HOST }} 22
 
       - name: Đóng gói ứng dụng bằng Maven
         run: mvn clean package -DskipTests

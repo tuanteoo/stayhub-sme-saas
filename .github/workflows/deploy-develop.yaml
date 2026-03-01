@@ -1,4 +1,5 @@
 name: Deploy Spring Boot to AWS (Develop)
+run: nc -zv ${{ secrets.EC2_HOST }} 22
 
 on:
   push:
@@ -41,11 +42,13 @@ jobs:
           strip_components: 1
 
       - name: Khởi động ứng dụng trên AWS
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          command_timeout: 10m
           script: |
             cd /home/ubuntu/app
             

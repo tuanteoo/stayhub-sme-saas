@@ -41,18 +41,25 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          # Thêm các tham số bảo hiểm
-          sync: true
-          debug: true
           script: |
             cd /home/ubuntu/app
-            # Dừng ứng dụng cũ nếu đang chạy
+            
+            # 1. Tắt ứng dụng cũ
             pkill -f 'java -jar' || true
             
-            # Nạp biến môi trường và chạy ứng dụng
+            # 2. Bắt buộc đợi 10 giây để Tomcat nhả hoàn toàn cổng 8080
+            sleep 10
+            
+            # 3. Nạp biến môi trường từ .env
             if [ -f .env ]; then
               set -a
               source .env
               set +a
             fi
-            nohup java -jar -Dspring.profiles.active=prod *.jar > app.log 2>&1 &
+            
+            # 4. Chạy ứng dụng ngầm và ÉP NGẮT mọi luồng giao tiếp bằng < /dev/null
+            nohup java -jar -Dspring.profiles.active=prod *.jar > app.log 2>&1 < /dev/null &
+            
+            # 5. Đợi 2 giây để tiến trình ổn định rồi chủ động đá văng phiên SSH
+            sleep 2
+            exit 0

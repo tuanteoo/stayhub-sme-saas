@@ -5,6 +5,7 @@ import com.stayhub.backend.Common.Util.ErrorCode;
 import com.stayhub.backend.Common.Util.UserStatus;
 import com.stayhub.backend.Common.Util.VerificationType;
 import com.stayhub.backend.Module.Identity.DTO.Request.LoginRequest;
+import com.stayhub.backend.Module.Identity.DTO.Request.LogoutRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.RegisterGuestRequest;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.Model.*;
@@ -172,5 +173,20 @@ public class AuthServiceImpl implements AuthService {
                 roles,
                 user.getStatus().name()
         );
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void logout(LogoutRequest request) {
+        boolean tokenExists = refreshTokenRepository.findByToken(request.refreshToken()).isPresent();
+
+        if (!tokenExists) {
+            log.warn("Cố gắng đăng xuất với Refresh Token không tồn tại hoặc đã bị xóa.");
+        } else {
+            refreshTokenRepository.deleteByToken(request.refreshToken());
+
+            String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+            log.info("User {} đã đăng xuất và xóa Refresh Token thành công", currentUserEmail);
+        }
     }
 }

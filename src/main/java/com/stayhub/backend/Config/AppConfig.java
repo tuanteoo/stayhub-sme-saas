@@ -28,13 +28,11 @@ import java.util.concurrent.Executor;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 @EnableAsync
 @RequiredArgsConstructor
 public class AppConfig {
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final AuthenticationProvider authenticationProvider;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -44,7 +42,7 @@ public class AppConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/**",
+                                "/auth/login","/auth/register-guest","/auth/verify-email",
                                 "/homestays/**",
                                 "/public/**",
                                 "/error",
@@ -52,10 +50,10 @@ public class AppConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .requestMatchers("/host/**").hasRole("ROLE_HOST")
+                        .requestMatchers("/host/**").hasAuthority("ROLE_HOST")
                         .anyRequest().authenticated()
                 )
-                .authenticationProvider(authenticationProvider)
+                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

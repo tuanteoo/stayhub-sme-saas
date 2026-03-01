@@ -18,10 +18,10 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class JwtTokenProvider {
-    @Value("${app.jwt.secret}")
+    @Value("${application.security.jwt.secret-key}")
     private String jwtSecret;
 
-    @Value("${app.jwt.expiration-ms}")
+    @Value("${application.security.jwt.expiration-ms}")
     private long jwtExpirationMs;
 
     private SecretKey getSigningKey() {

@@ -19,13 +19,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Kiểm tra kết nối mạng (Network Check)
+      - name: Kiểm tra kết nối mạng
         run: nc -zv -w 5 ${{ secrets.EC2_HOST }} 22
 
       - name: Đóng gói bằng Maven
         run: mvn clean package -DskipTests
 
-      - name: Đẩy tệp .jar lên AWS (SCP)
+      - name: Đẩy tệp .jar lên AWS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -35,31 +35,25 @@ jobs:
           target: "/home/ubuntu/app/"
           strip_components: 1
 
-      - name: Thực thi ứng dụng trên AWS (SSH)
+      - name: Thực thi ứng dụng trên AWS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 60s
+          command_timeout: 10m
           script: |
             cd /home/ubuntu/app
             
-            # 1. Tắt ứng dụng cũ
             pkill -f 'java -jar' || true
-            
-            # 2. Bắt buộc đợi 10 giây để Tomcat nhả hoàn toàn cổng 8080
             sleep 10
             
-            # 3. Nạp biến môi trường từ .env
             if [ -f .env ]; then
               set -a
               source .env
               set +a
             fi
             
-            # 4. Chạy ứng dụng ngầm và ÉP NGẮT mọi luồng giao tiếp bằng < /dev/null
-            nohup java -jar -Dspring.profiles.active=prod *.jar > app.log 2>&1 < /dev/null &
-            
-            # 5. Đợi 2 giây để tiến trình ổn định rồi chủ động đá văng phiên SSH
-            sleep 2
-            exit 0
+            # Sử dụng bash -c bọc câu lệnh và thêm disown ở cuối
+            bash -c "nohup java -jar -Dspring.profiles.active=prod *.jar > app.log 2>&1 < /dev/null & disown"

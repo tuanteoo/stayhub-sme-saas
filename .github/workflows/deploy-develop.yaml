@@ -13,28 +13,20 @@ jobs:
       - name: Checkout mã nguồn
         uses: actions/checkout@v3
 
-      - name: Thiết lập môi trường Java 17
+      - name: Thiết lập Java 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Kiểm tra kết nối mạng tới AWS
-        run: nc -zv ${{ secrets.EC2_HOST }} 22
+      - name: Kiểm tra kết nối mạng (Network Check)
+        run: nc -zv -w 5 ${{ secrets.EC2_HOST }} 22
 
-      - name: Đóng gói ứng dụng bằng Maven
+      - name: Đóng gói bằng Maven
         run: mvn clean package -DskipTests
 
-      - name: Khởi tạo thư mục trên máy chủ AWS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: mkdir -p /home/ubuntu/app
-
-      - name: Đẩy tệp tin lên máy chủ AWS
-        uses: appleboy/scp-action@master
+      - name: Đẩy tệp .jar lên AWS (SCP)
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -43,27 +35,24 @@ jobs:
           target: "/home/ubuntu/app/"
           strip_components: 1
 
-      - name: Khởi động ứng dụng trên AWS
+      - name: Thực thi ứng dụng trên AWS (SSH)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          command_timeout: 10m
+          # Thêm các tham số bảo hiểm
+          sync: true
+          debug: true
           script: |
             cd /home/ubuntu/app
-            
-            # Tìm và tắt tiến trình Java cũ đang chạy để giải phóng cổng 8080
+            # Dừng ứng dụng cũ nếu đang chạy
             pkill -f 'java -jar' || true
             
-            # Xóa tệp tin nhật ký cũ
-            rm -f app.log
-            
-            # Nạp các biến bảo mật từ tệp .env vào hệ thống
-            set -a
-            source /home/ubuntu/app/.env
-            set +a
-            
-            # Chạy ứng dụng mới ngầm định
+            # Nạp biến môi trường và chạy ứng dụng
+            if [ -f .env ]; then
+              set -a
+              source .env
+              set +a
+            fi
             nohup java -jar -Dspring.profiles.active=prod *.jar > app.log 2>&1 &

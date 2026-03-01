@@ -6,7 +6,7 @@ spring:
   flyway:
     enabled: true
   mail:
-    from: stayhub.noreply@gmail.com
+    from: ${MAIL_FROM}
     host: smtp.gmail.com
     port: 587
     username: ${MAIL_USERNAME}

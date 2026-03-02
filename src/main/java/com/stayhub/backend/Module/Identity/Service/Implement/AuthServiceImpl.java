@@ -7,6 +7,7 @@ import com.stayhub.backend.Common.Util.VerificationType;
 import com.stayhub.backend.Module.Identity.DTO.Request.LoginRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.RegisterGuestRequest;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.UserInfResponse;
 import com.stayhub.backend.Module.Identity.Model.*;
 import com.stayhub.backend.Module.Identity.Repository.*;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
@@ -146,6 +147,15 @@ public class AuthServiceImpl implements AuthService {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         User user = userDetails.getUser();
 
+        Profile profile = profileRepository.findByUserId(user.getId())
+                .orElse(new Profile());
+
+        UserInfResponse userInfResponse = new UserInfResponse(
+                user.getEmail(),
+                profile.getFullName(),
+                profile.getAvatarUrl()
+        );
+
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
 
         String refreshTokenString = UUID.randomUUID().toString();
@@ -165,12 +175,12 @@ public class AuthServiceImpl implements AuthService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-
         return new LoginResponse(
                 accessToken,
                 refreshTokenString,
                 roles,
-                user.getStatus().name()
+                user.getStatus().name(),
+                userInfResponse
         );
     }
 }

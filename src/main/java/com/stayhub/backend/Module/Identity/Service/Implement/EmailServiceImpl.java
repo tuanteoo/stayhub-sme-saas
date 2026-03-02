@@ -20,7 +20,9 @@ import java.nio.charset.StandardCharsets;
 public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
-    //private String frontendUrl = "";
+
+    @Value("${application.frontend.url}")
+    private String frontendUrl;
 
     @Value("${spring.mail.from}")
     private String fromEmail;
@@ -39,9 +41,8 @@ public class EmailServiceImpl implements EmailService {
             Context context = new Context();
             context.setVariable("name", fullName);
 
-            String verifyUrl =  "http://localhost:8080/api/v1/auth/verify-email?token=" + token;
+            String verifyUrl = frontendUrl + "/verify-email?token=" + token;
             context.setVariable("url", verifyUrl);
-
 
             String htmlContent = templateEngine.process("email/verify-email", context);
 

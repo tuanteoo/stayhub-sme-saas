@@ -25,6 +25,8 @@ application:
       expiration: 86400
       refresh-token:
         expiration: 604800000
+  frontend:
+    url: "https://getstayhub.me"
 
 server:
   servlet:

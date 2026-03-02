@@ -25,13 +25,18 @@ jobs:
       - name: Đóng gói ứng dụng bằng Maven
         run: mvn clean package -DskipTests
 
+      - name: Đổi tên file Jar thành backend.jar
+        run: |
+          rm -f target/*-plain.jar # Xóa file plain 
+          mv target/*.jar target/backend.jar
+
       - name: Đẩy tệp thực thi lên máy chủ AWS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "target/*.jar"
+          source: "target/backend.jar"
           target: "/home/ubuntu/app/"
           strip_components: 1
 
@@ -42,10 +47,4 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ubuntu/app
-            
-            # Đổi tên tệp mới nhất thành tên cố định để dịch vụ nhận diện
-            mv *.jar backend.jar
-            
-            # Yêu cầu hệ điều hành khởi động lại ứng dụng nền
             sudo systemctl restart backend

@@ -42,7 +42,7 @@ public class AppConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/login","/auth/register-guest","/auth/verify-email",
+                                "/auth/login","/auth/register-guest","/auth/verify-email","/auth/refresh-token",
                                 "/homestays/**",
                                 "/public/**",
                                 "/error",

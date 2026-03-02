@@ -6,12 +6,15 @@ import com.stayhub.backend.Common.Util.UserStatus;
 import com.stayhub.backend.Common.Util.VerificationType;
 import com.stayhub.backend.Module.Identity.DTO.Request.LoginRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.LogoutRequest;
+import com.stayhub.backend.Module.Identity.DTO.Request.RefreshTokenRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.RegisterGuestRequest;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.UserInfResponse;
 import com.stayhub.backend.Module.Identity.Model.*;
 import com.stayhub.backend.Module.Identity.Repository.*;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
+import com.stayhub.backend.Module.Identity.Security.CustomUserDetailsService;
 import com.stayhub.backend.Module.Identity.Security.JwtTokenProvider;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Module.Identity.Service.EmailService;
@@ -23,12 +26,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -198,5 +204,31 @@ public class AuthServiceImpl implements AuthService {
             String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
             log.info("User {} đã đăng xuất và xóa Refresh Token thành công", currentUserEmail);
         }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public TokenRefreshResponse refreshToken(RefreshTokenRequest request) {
+        String requestRefreshToken = request.refreshToken();
+        return refreshTokenRepository.findByToken(requestRefreshToken)
+                .map(token -> {
+                    if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
+                        refreshTokenRepository.delete(token);
+                        throw new RuntimeException("Refresh token đã hết hạn. Vui lòng đăng nhập lại.");
+                    }
+                    return token;
+                })
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
+
+                    Authentication authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+
+                    String newAccessToken = jwtTokenProvider.generateAccessToken(authentication);
+
+                    return new TokenRefreshResponse(newAccessToken, requestRefreshToken);
+                })
+                .orElseThrow(() -> new RuntimeException("Refresh Token không hợp lệ hoặc không tồn tại trong hệ thống."));
     }
 }

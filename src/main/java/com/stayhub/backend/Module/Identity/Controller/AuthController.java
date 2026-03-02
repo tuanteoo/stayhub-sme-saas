@@ -3,8 +3,10 @@ package com.stayhub.backend.Module.Identity.Controller;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.DTO.Request.LoginRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.LogoutRequest;
+import com.stayhub.backend.Module.Identity.DTO.Request.RefreshTokenRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.RegisterGuestRequest;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +37,16 @@ public class AuthController {
         return new ResponseData<>(HttpStatus.OK.value(), "Đăng nhập thành công", response);
     }
 
+    @PostMapping("/refresh-token")
+    public ResponseData<TokenRefreshResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        TokenRefreshResponse response = authService.refreshToken(request);
+        return new ResponseData<>(200, "Làm mới token thành công", response);
+    }
+
     @PostMapping("/logout")
     public ResponseData<String> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request);
         return new ResponseData<>(HttpStatus.OK.value(), "Đăng xuất thành công");
     }
+
 }

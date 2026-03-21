@@ -31,6 +31,7 @@ application:
 server:
   servlet:
     context-path: /api/v1
+  address: 127.0.0.1
 
 springdoc:
   api-docs:

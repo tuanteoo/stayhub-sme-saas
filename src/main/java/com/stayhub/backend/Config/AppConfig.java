@@ -28,6 +28,7 @@ import java.util.concurrent.Executor;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @EnableAsync
 @RequiredArgsConstructor
 public class AppConfig {
@@ -51,6 +52,7 @@ public class AppConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers("/host/**").hasAuthority("ROLE_HOST")
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

@@ -2,6 +2,15 @@ server:
   port: 8080
 
 spring:
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      region:
+        static: ${AWS_S3_REGION}
+      s3:
+        bucket: ${AWS_S3_BUCKET}
   datasource:
     url: ${POSTGRES_URL}
     username: ${POSTGRES_USER}

@@ -4,6 +4,7 @@ import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Property.DTO.Request.CategoryRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.CategoryResponse;
 import com.stayhub.backend.Module.Property.Service.CategoryService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +27,7 @@ public class CategoryController {
         return new ResponseData<>(201, "Tạo danh mục thành công", response);
     }
 
+    @Operation(summary = "Lấy danh sách danh mục loại chỗ ở")
     @GetMapping("/public/categories")
     public ResponseData<List<CategoryResponse>> getAllCategories() {
         List<CategoryResponse> response = categoryService.getAllActiveCategories();

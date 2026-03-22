@@ -4,6 +4,7 @@ import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Property.DTO.Request.AmenityRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.AmenityResponse;
 import com.stayhub.backend.Module.Property.Service.AmenityService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +27,7 @@ public class AmenityController {
         return new ResponseData<>(201, "Tạo tiện ích thành công", response);
     }
 
+    @Operation(summary = "Lấy danh sách tiện tích")
     @GetMapping("/public/amenities")
     public ResponseData<List<AmenityResponse>> getAllCategories() {
         List<AmenityResponse> response = amenityService.getAllAmenities();

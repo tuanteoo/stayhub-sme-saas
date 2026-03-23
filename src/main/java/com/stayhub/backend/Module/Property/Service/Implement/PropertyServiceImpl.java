@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -90,12 +91,16 @@ public class PropertyServiceImpl implements PropertyService {
         List<Amenity> amenityList = amenityRepository.findAllById(request.amenityIds());
         property.getAmenities().addAll(amenityList);
 
-        Set<PropertyImage> images = request.imageUrls().stream()
-                .map(url -> PropertyImage.builder()
-                        .property(property)
-                        .url(url)
-                        .build())
-                .collect(Collectors.toSet());
+        Set<PropertyImage> images = new HashSet<>();
+        List<String> urls = request.imageUrls();
+        for (int i = 0; i < urls.size(); i++) {
+            images.add(PropertyImage.builder()
+                    .property(property)
+                    .url(urls.get(i))
+                    .displayOrder(i)
+                    .isThumbnail(i == 0)
+                    .build());
+        }
         property.getImages().addAll(images);
 
         propertyRepository.save(property);

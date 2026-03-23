@@ -1,24 +1,16 @@
 package com.stayhub.backend.Module.Identity.Service.Implement;
 
-import com.stayhub.backend.Common.Util.CancellationPolicy;
 import com.stayhub.backend.Common.Util.HostOnboardingStatus;
-import com.stayhub.backend.Common.Util.PropertyStatus;
-import com.stayhub.backend.Common.Util.SlugUtils;
 import com.stayhub.backend.Module.Identity.DTO.Request.HostVerificationRequest;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Identity.Service.HostOnboardingService;
-import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

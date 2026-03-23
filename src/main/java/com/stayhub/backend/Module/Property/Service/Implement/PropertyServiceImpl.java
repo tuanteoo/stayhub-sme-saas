@@ -1,5 +1,8 @@
 package com.stayhub.backend.Module.Property.Service.Implement;
 
+import com.stayhub.backend.Common.Exception.AppException;
+import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
+import com.stayhub.backend.Common.Util.ErrorCode;
 import com.stayhub.backend.Common.Util.HostOnboardingStatus;
 import com.stayhub.backend.Common.Util.PropertyStatus;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
@@ -36,23 +39,23 @@ public class PropertyServiceImpl implements PropertyService {
     @Transactional(rollbackFor = Exception.class)
     public void createProperty(String hostEmail, PropertyCreateRequest request) {
         User currentUser = userRepository.findByEmail(hostEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng!"));
 
         HostDetail hostDetail = hostDetailRepository.findById(currentUser.getId())
-                .orElseThrow(() -> new RuntimeException("Bạn phải đăng ký làm Chủ nhà trước khi đăng tin!"));
+                .orElseThrow(() -> new AppException(ErrorCode.HOST_PROFILE_NOT_FOUND));
 
         if (hostDetail.getOnboardingStatus() != HostOnboardingStatus.APPROVED) {
-            throw new RuntimeException("Hồ sơ Chủ nhà của bạn chưa được duyệt! Chỉ những Chủ nhà đã được xác thực mới có quyền đăng tin.");
+            throw new AppException(ErrorCode.HOST_NOT_APPROVED);
         }
 
         Category category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục nhà!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục nhà!"));
 
         RentalType rentalType = rentalTypeRepository.findById(request.rentalTypeId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy loại hình cho thuê!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại hình cho thuê!"));
 
         CancellationPolicy policy = cancellationPolicyRepository.findById(request.cancellationPolicyId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chính sách hủy phòng!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chính sách hủy phòng!"));
 
         Property property = Property.builder()
                 .host(currentUser)

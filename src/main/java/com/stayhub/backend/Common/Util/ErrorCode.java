@@ -15,12 +15,18 @@ public enum ErrorCode {
     PASSWORD_INVALID(1005, "Mật khẩu phải có ít nhất 8 ký tự", HttpStatus.BAD_REQUEST),
     INVALID_DATA(1006, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
 
+
     // --- BỔ SUNG MỚI CHO AUTH & IDENTITY ---
     EMAIL_EXISTED(1007, "Email này đã được đăng ký", HttpStatus.CONFLICT),
     ROLE_NOT_FOUND(1008, "Lỗi cấu hình: Không tìm thấy vai trò hệ thống", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_TOKEN(1009, "Mã xác thực không hợp lệ hoặc không tồn tại", HttpStatus.BAD_REQUEST),
     TOKEN_EXPIRED(1010, "Mã xác thực đã hết hạn, vui lòng yêu cầu gửi lại", HttpStatus.BAD_REQUEST),
-    USER_ALREADY_VERIFIED(1011, "Tài khoản này đã được xác thực trước đó", HttpStatus.BAD_REQUEST);
+    USER_ALREADY_VERIFIED(1011, "Tài khoản này đã được xác thực trước đó", HttpStatus.BAD_REQUEST),
+    HOST_PROFILE_NOT_FOUND(1012, "Không tìm thấy hồ sơ Chủ nhà của User này", HttpStatus.NOT_FOUND),
+    HOST_NOT_APPROVED(1013, "Hồ sơ chưa được duyệt! Chỉ Chủ nhà đã xác thực mới có quyền đăng tin", HttpStatus.FORBIDDEN),
+    CATEGORY_NOT_FOUND(1014, "Không tìm thấy danh mục nhà", HttpStatus.NOT_FOUND),
+    RENTAL_TYPE_NOT_FOUND(1015, "Không tìm thấy loại hình cho thuê", HttpStatus.NOT_FOUND),
+    POLICY_NOT_FOUND(1016, "Không tìm thấy chính sách hủy phòng", HttpStatus.NOT_FOUND);
 
 
     private final int code;

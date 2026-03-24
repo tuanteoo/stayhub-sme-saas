@@ -2,6 +2,7 @@ package com.stayhub.backend.Module.Property.Controller;
 
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
+import com.stayhub.backend.Module.Identity.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
@@ -46,5 +47,13 @@ public class PropertyController {
         PageResponse<PropertyCardResponse> properties = propertyService.getPropertiesForGuest(page, size, sortBy, sortDir,destination,guestCount);
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", properties));
+    }
+
+    @GetMapping("/{slug}")
+    public ResponseEntity<ResponseData<PropertyDetailResponse>> getPropertyDetail(@PathVariable String slug) {
+
+        PropertyDetailResponse propertyDetail = propertyService.getPropertyBySlug(slug);
+
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy thông tin chi tiết thành công", propertyDetail));
     }
 }

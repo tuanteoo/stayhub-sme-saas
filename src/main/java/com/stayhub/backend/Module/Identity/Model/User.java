@@ -43,6 +43,12 @@ public class User extends AbstractEntity {
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Profile profile;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private HostDetail hostDetail;
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 }

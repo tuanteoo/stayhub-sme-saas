@@ -4,6 +4,9 @@ import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
+import com.stayhub.backend.Module.Identity.DTO.Response.CancellationPolicyResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
@@ -20,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -149,6 +153,89 @@ public class PropertyServiceImpl implements PropertyService {
                 .totalPage(propertyPage.getTotalPages())
                 .totalElements(propertyPage.getTotalElements())
                 .items(cardResponses)
+                .build();
+    }
+
+    @Override
+    public PropertyDetailResponse getPropertyBySlug(String slug) {
+        Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở này hoặc bài đăng chưa được duyệt!"));
+
+        List<String> amenityNames = property.getAmenities().stream()
+                .map(Amenity::getName)
+                .toList();
+
+        List<String> imageUrls = property.getImages().stream()
+                .sorted(Comparator.comparing(PropertyImage::getDisplayOrder))
+                .map(PropertyImage::getUrl)
+                .toList();
+
+        User host = property.getHost();
+        String hostName = host.getEmail();
+        String avatarUrl = null;
+
+        if (host.getProfile() != null) {
+            hostName = host.getProfile().getFullName();
+            avatarUrl = host.getProfile().getAvatarUrl();
+        }
+
+        HostInfoResponse hostInfo = HostInfoResponse.builder()
+                .id(host.getId())
+                .fullName(hostName)
+                .avatarUrl(avatarUrl)
+                .joinedAt(host.getHostDetail().getCreatedAt())
+                .build();
+
+        CancellationPolicyResponse cancellationPolicy = CancellationPolicyResponse.builder()
+                .id(property.getCancellationPolicy().getId())
+                .name(property.getCancellationPolicy().getName())
+                .description(property.getCancellationPolicy().getDescription())
+                .refundPercentage(property.getCancellationPolicy().getRefundPercentage())
+                .daysBeforeCheckin(property.getCancellationPolicy().getDaysBeforeCheckin())
+                .build();
+
+        return PropertyDetailResponse.builder()
+                .id(property.getId())
+                .name(property.getName())
+                .slug(property.getSlug())
+                .description(property.getDescription())
+
+                .addressDetail(property.getAddressDetail())
+                .ward(property.getWard())
+                .district(property.getDistrict())
+                .province(property.getProvince())
+                .latitude(property.getLatitude())
+                .longitude(property.getLongitude())
+
+                .maxGuests(property.getMaxGuests())
+                .numBedrooms(property.getNumBedrooms())
+                .numBeds(property.getNumBeds())
+                .numBathrooms(property.getNumBathrooms())
+
+                .pricePerNight(property.getPricePerNight())
+                .cleaningFee(property.getCleaningFee())
+                .weekendSurchargePercentage(property.getWeekendSurchargePercentage())
+                .depositPercentage(property.getDepositPercentage())
+                .isPayAtCheckinAllowed(property.getIsPayAtCheckinAllowed())
+
+                .checkinAfter(property.getCheckinAfter())
+                .checkoutBefore(property.getCheckoutBefore())
+                .isInstantBook(property.getIsInstantBook())
+                .isSmokingAllowed(property.getIsSmokingAllowed())
+                .isPetsAllowed(property.getIsPetsAllowed())
+                .isPartyAllowed(property.getIsPartyAllowed())
+
+                .ratingAvg(property.getRatingAvg())
+                .reviewCount(property.getReviewCount())
+
+                .categoryName(property.getCategory().getName())
+                .rentalTypeName(property.getRentalType().getName())
+
+                .host(hostInfo)
+                .cancellationPolicy(cancellationPolicy)
+
+                .amenities(amenityNames)
+                .imageUrls(imageUrls)
                 .build();
     }
 }

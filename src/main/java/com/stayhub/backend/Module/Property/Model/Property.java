@@ -8,6 +8,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -110,4 +111,83 @@ public class Property {
     )
     @Builder.Default
     private Set<Amenity> amenities = new HashSet<>();
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    // ==========================================
+    // THỜI GIAN NHẬN/TRẢ PHÒNG & TIỀN TỆ
+    // ==========================================
+    @Column(name = "currency", length = 3)
+    @Builder.Default
+    private String currency = "VND";
+
+    @Column(name = "checkin_after", length = 10)
+    private String checkinAfter;
+
+    @Column(name = "checkout_before", length = 10)
+    private String checkoutBefore;
+
+    // ==========================================
+    // NỘI QUY CHỖ Ở & CÀI ĐẶT ĐẶT PHÒNG
+    // ==========================================
+    @Column(name = "is_instant_book")
+    @Builder.Default
+    private Boolean isInstantBook = false;
+
+    @Column(name = "is_smoking_allowed")
+    @Builder.Default
+    private Boolean isSmokingAllowed = false;
+
+    @Column(name = "is_pets_allowed")
+    @Builder.Default
+    private Boolean isPetsAllowed = false;
+
+    @Column(name = "is_party_allowed")
+    @Builder.Default
+    private Boolean isPartyAllowed = false;
+
+    // ==========================================
+    // THỐNG KÊ ĐÁNH GIÁ (Dùng để hiển thị ngoài Card)
+    // ==========================================
+    @Column(name = "rating_avg")
+    @Builder.Default
+    private Double ratingAvg = 0.0;
+
+    @Column(name = "review_count")
+    @Builder.Default
+    private Integer reviewCount = 0;
+
+    @Column(name = "search_text", columnDefinition = "TEXT")
+    private String searchText;
+
+    // ==========================================
+    // THỜI GIAN TẠO & CẬP NHẬT TỰ ĐỘNG
+    // ==========================================
+    @Column(name = "created_at", updatable = false)
+    @org.hibernate.annotations.CreationTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    @org.hibernate.annotations.UpdateTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    public void generateSearchText() {
+        String rawData = String.format("%s %s %s %s",
+                this.name != null ? this.name : "",
+                this.province != null ? this.province : "",
+                this.district != null ? this.district : "",
+                this.ward != null ? this.ward : ""
+        );
+
+        // Gọi Util để lột dấu và khoảng trắng, sau đó lưu vào cột searchText
+        this.searchText = com.stayhub.backend.Common.Util.StringUtil.normalizeForSearch(rawData);
+    }
 }

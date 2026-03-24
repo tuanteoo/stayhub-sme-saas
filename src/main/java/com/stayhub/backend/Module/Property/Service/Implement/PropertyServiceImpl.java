@@ -1,28 +1,28 @@
 package com.stayhub.backend.Module.Property.Service.Implement;
 
+import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
-import com.stayhub.backend.Common.Util.ErrorCode;
-import com.stayhub.backend.Common.Util.HostOnboardingStatus;
-import com.stayhub.backend.Common.Util.PropertyStatus;
+import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
+import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
 import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -78,7 +78,7 @@ public class PropertyServiceImpl implements PropertyService {
                 // Content
                 .name(request.name())
                 .description(request.description())
-                .slug(generateSlug(request.name()+ "-" + System.currentTimeMillis()))
+                .slug(SlugUtils.toSlug(request.name() + "-" + System.currentTimeMillis()))
 
                 // Price and Payment
                 .pricePerNight(request.pricePerNight())
@@ -109,10 +109,46 @@ public class PropertyServiceImpl implements PropertyService {
         propertyRepository.save(property);
     }
 
-    private String generateSlug(String name) {
-        if (name == null) return "";
-        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD);
-        String slug = Pattern.compile("\\p{InCombiningDiacriticalMarks}+").matcher(normalized).replaceAll("");
-        return slug.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+    @Override
+    public PageResponse<PropertyCardResponse> getPropertiesForGuest(int page, int size, String sortBy, String sortDir, String destination, Integer guestCount) {
+        Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
+        Specification<Property> spec = PropertySpecification.buildSearchFilter(destination, guestCount);
+        Page<Property> propertyPage = propertyRepository.findAll(spec, pageable);
+
+        List<PropertyCardResponse> cardResponses = propertyPage.stream().map(property -> {
+            String thumbnailUrl = property.getImages().stream()
+                    .filter(PropertyImage::getIsThumbnail)
+                    .map(PropertyImage::getUrl)
+                    .findFirst()
+                    .orElse(null);
+
+            List<String> amenityNames = property.getAmenities().stream()
+                    .map(Amenity::getName)
+                    .toList();
+
+            return new PropertyCardResponse(
+                    property.getId(),
+                    property.getName(),
+                    property.getSlug(),
+                    property.getProvince(),
+                    property.getDistrict(),
+                    property.getPricePerNight(),
+                    thumbnailUrl,
+                    property.getRatingAvg(),
+                    property.getMaxGuests(),
+                    property.getNumBedrooms(),
+                    property.getNumBeds(),
+                    property.getNumBathrooms(),
+                    amenityNames
+            );
+        }).toList();
+
+        return PageResponse.<PropertyCardResponse>builder()
+                .pageNo(page)
+                .pageSize(size)
+                .totalPage(propertyPage.getTotalPages())
+                .totalElements(propertyPage.getTotalElements())
+                .items(cardResponses)
+                .build();
     }
 }

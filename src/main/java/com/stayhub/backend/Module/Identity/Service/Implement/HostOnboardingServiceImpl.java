@@ -1,6 +1,7 @@
 package com.stayhub.backend.Module.Identity.Service.Implement;
 
 import com.stayhub.backend.Common.Exception.AppException;
+import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.ErrorCode;
 import com.stayhub.backend.Common.Util.HostOnboardingStatus;
 import com.stayhub.backend.Module.Identity.DTO.Request.HostApprovalRequest;
@@ -29,7 +30,7 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
     public void submitHostApplication(String email, HostVerificationRequest request) {
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản người dùng!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản người dùng!"));
 
         HostDetail hostDetail = hostDetailRepository.findById(currentUser.getId())
                 .orElse(HostDetail.builder()
@@ -67,7 +68,7 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
             User user = hostDetail.getUser();
 
             Role hostRole = roleRepository.findByName("ROLE_HOST")
-                    .orElseThrow(() -> new RuntimeException("Lỗi hệ thống: Không tìm thấy quyền hợp lệ"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Lỗi hệ thống: Không tìm thấy quyền hợp lệ"));
             user.getRoles().add(hostRole);
 
             userRepository.save(user);

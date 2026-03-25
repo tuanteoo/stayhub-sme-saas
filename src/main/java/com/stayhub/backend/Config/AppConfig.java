@@ -47,6 +47,7 @@ public class AppConfig {
                                 "/auth/login","/auth/register-guest","/auth/verify-email","/auth/refresh-token",
                                 "/homestays/**",
                                 "/public/**",
+                                "/files/**",
                                 "/error",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",

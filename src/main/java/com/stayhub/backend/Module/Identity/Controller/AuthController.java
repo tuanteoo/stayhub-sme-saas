@@ -53,7 +53,7 @@ public class AuthController {
     }
 
     @PostMapping("/host-applications")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseData<String> submitApplication(
             Principal principal,
             @Valid @RequestBody HostVerificationRequest request) {
@@ -64,7 +64,7 @@ public class AuthController {
     }
 
     @PutMapping("/{userId}/approval-host")
-//    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ResponseData<String>> reviewApplication(
             @PathVariable Long userId,
             @Valid @RequestBody HostApprovalRequest request) {

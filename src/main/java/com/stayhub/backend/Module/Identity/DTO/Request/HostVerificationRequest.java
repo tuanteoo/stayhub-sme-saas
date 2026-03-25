@@ -1,5 +1,6 @@
 package com.stayhub.backend.Module.Identity.DTO.Request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -11,6 +12,7 @@ public record HostVerificationRequest(
         String businessPhone,
 
         @NotBlank(message = "Email hỗ trợ không được để trống")
+        @Email
         String supportEmail,
 
         @NotBlank(message = "Số CCCD/Định danh không được để trống")

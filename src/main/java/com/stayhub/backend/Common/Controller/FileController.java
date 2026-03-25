@@ -16,6 +16,7 @@ import java.util.List;
 public class FileController {
     private final S3PresignedService s3PresignedService;
 
+    @PreAuthorize("hasAuthority('ROLE_HOST') or hasAuthority('ROLE_USER')")
     @PostMapping("/presigned-url")
     public ResponseData<PresignedUrlResponse> getPresignedUrl(
             @RequestBody PresignedUrlRequest.FileMetadata fileData) {

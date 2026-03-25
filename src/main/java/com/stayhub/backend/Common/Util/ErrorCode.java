@@ -26,8 +26,8 @@ public enum ErrorCode {
     HOST_NOT_APPROVED(1013, "Hồ sơ chưa được duyệt! Chỉ Chủ nhà đã xác thực mới có quyền đăng tin", HttpStatus.FORBIDDEN),
     CATEGORY_NOT_FOUND(1014, "Không tìm thấy danh mục nhà", HttpStatus.NOT_FOUND),
     RENTAL_TYPE_NOT_FOUND(1015, "Không tìm thấy loại hình cho thuê", HttpStatus.NOT_FOUND),
-    POLICY_NOT_FOUND(1016, "Không tìm thấy chính sách hủy phòng", HttpStatus.NOT_FOUND);
-
+    POLICY_NOT_FOUND(1016, "Không tìm thấy chính sách hủy phòng", HttpStatus.NOT_FOUND),
+    PASSWORD_EMAIL_WRONG(1017, "Email hoặc mật khẩu không chính xác", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;

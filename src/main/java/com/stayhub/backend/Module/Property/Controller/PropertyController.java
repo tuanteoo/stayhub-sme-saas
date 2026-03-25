@@ -16,16 +16,14 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 
 @RestController
-@RequestMapping("properties")
+@RequestMapping("/properties")
 @RequiredArgsConstructor
 public class PropertyController {
     private final PropertyService propertyService;
 
     @PostMapping
-//    @PreAuthorize("isAuthenticated()")
-    public ResponseData<String> createProperty(
-            Principal principal,
-            @Valid @RequestBody PropertyCreateRequest request) {
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    public ResponseData<String> createProperty(Principal principal, @Valid @RequestBody PropertyCreateRequest request) {
 
         propertyService.createProperty(principal.getName(), request);
 

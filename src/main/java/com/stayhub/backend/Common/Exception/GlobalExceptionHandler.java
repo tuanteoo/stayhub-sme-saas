@@ -1,10 +1,14 @@
 package com.stayhub.backend.Common.Exception;
 
+import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Common.DTO.Response.ResponseError;
 import com.stayhub.backend.Common.Util.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -76,5 +80,19 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode()).body(responseError);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ResponseError> handleAuthenticationException(AuthenticationException e) {
+        log.error("Lỗi đăng nhập bắt được: {}", e.getClass().getName());
+
+        ResponseError responseError = ResponseError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("UNAUTHORIZED")
+                .message("Email hoặc mật khẩu không chính xác!")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseError);
     }
 }

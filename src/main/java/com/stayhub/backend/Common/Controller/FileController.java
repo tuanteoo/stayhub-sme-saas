@@ -16,12 +16,15 @@ import java.util.List;
 public class FileController {
     private final S3PresignedService s3PresignedService;
 
-    @GetMapping("/presigned-url")
+    @PostMapping("/presigned-url")
     public ResponseData<PresignedUrlResponse> getPresignedUrl(
-            @RequestParam(defaultValue = ".jpg") String extension,
-            @RequestParam(defaultValue = "image/jpeg") String contentType) {
+            @RequestBody PresignedUrlRequest.FileMetadata fileData) {
 
-        PresignedUrlResponse response = s3PresignedService.generatePresignedUrl(extension, contentType);
+        PresignedUrlResponse response = s3PresignedService.generatePresignedUrl(
+                fileData.extension(),
+                fileData.contentType()
+        );
+
         return new ResponseData<>(200, "Tạo Presigned URL thành công", response);
     }
 

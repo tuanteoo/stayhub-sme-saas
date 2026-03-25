@@ -22,7 +22,7 @@ public class PropertyController {
     private final PropertyService propertyService;
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+//    @PreAuthorize("isAuthenticated()")
     public ResponseData<String> createProperty(
             Principal principal,
             @Valid @RequestBody PropertyCreateRequest request) {

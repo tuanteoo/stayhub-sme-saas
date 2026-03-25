@@ -44,18 +44,19 @@ public class AppConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/login","/auth/register-guest","/auth/verify-email","/auth/refresh-token",
-                                "/homestays/**",
-                                "/public/**",
-                                "/files/**",
-                                "/error",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
+//                                "/auth/login","/auth/register-guest","/auth/verify-email","/auth/refresh-token",
+//                                "/homestays/**",
+//                                "/public/**",
+//                                "/files/**",
+//                                "/error",
+//                                "/v3/api-docs/**",
+//                                "/swagger-ui/**",
+//                                "/swagger-ui.html"
+                                "/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET,"/properties/**").permitAll()
-                        .requestMatchers("/host/**").hasAuthority("ROLE_HOST")
-                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+//                        .requestMatchers(HttpMethod.GET,"/properties/**").permitAll()
+//                        .requestMatchers("/host/**").hasAuthority("ROLE_HOST")
+//                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

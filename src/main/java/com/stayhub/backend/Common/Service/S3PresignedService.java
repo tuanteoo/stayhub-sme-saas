@@ -1,5 +1,6 @@
 package com.stayhub.backend.Common.Service;
 
+import com.stayhub.backend.Common.DTO.Request.PresignedUrlRequest;
 import com.stayhub.backend.Common.DTO.Response.PresignedUrlResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +11,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,17 +26,16 @@ public class S3PresignedService {
     private String region;
 
     public PresignedUrlResponse generatePresignedUrl(String extension, String contentType) {
-        // 1. Tạo tên file độc nhất
-        String uniqueFileName = UUID.randomUUID().toString() + extension;
 
-        // 2. Định nghĩa yêu cầu Upload
+        String uniqueFileName = UUID.randomUUID() + extension;
+
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(uniqueFileName)
                 .contentType(contentType)
                 .build();
 
-        // 3. Ký tên vào URL, cho phép vé này có hiệu lực trong đúng 15 phút
+
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(15))
                 .putObjectRequest(objectRequest)
@@ -42,10 +43,15 @@ public class S3PresignedService {
 
         PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
 
-        // 4. Lấy URL đã ký và URL public
         String presignedUrl = presignedRequest.url().toString();
         String publicUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, uniqueFileName);
 
         return new PresignedUrlResponse(presignedUrl, publicUrl);
+    }
+
+    public List<PresignedUrlResponse> generateMultiplePresignedUrls(List<PresignedUrlRequest.FileMetadata> files) {
+        return files.stream()
+                .map(file -> generatePresignedUrl(file.extension(), file.contentType()))
+                .toList();
     }
 }

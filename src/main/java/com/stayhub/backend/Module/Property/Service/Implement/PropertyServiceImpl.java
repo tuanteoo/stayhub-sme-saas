@@ -2,6 +2,7 @@ package com.stayhub.backend.Module.Property.Service.Implement;
 
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.AppException;
+import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.CancellationPolicyResponse;
@@ -100,6 +101,10 @@ public class PropertyServiceImpl implements PropertyService {
         if (!allAmenityIds.isEmpty()) {
             amenityRepository.findAllById(allAmenityIds)
                     .forEach(amenity -> amenityMap.put(amenity.getId(), amenity));
+
+            if (amenityMap.size() != allAmenityIds.size()) {
+                throw new InvalidDataException("Một hoặc nhiều tiện ích không tồn tại trong hệ thống!");
+            }
         }
 
         if (request.amenityIds() != null) {
@@ -345,9 +350,9 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void approveFirstPendingPropertyByHost(Long hostId) {
+    public void approveFirstPendingPropertyByHost(Long id) {
         Optional<Property> firstPendingProperty = propertyRepository.findFirstByHostIdAndStatusOrderByCreatedAtAsc(
-                hostId,
+                id,
                 PropertyStatus.PENDING_REVIEW
         );
 

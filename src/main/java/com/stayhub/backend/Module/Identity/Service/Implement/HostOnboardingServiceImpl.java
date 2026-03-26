@@ -83,8 +83,8 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
     }
 
     @Override
-    public void reviewHostApplication(Long userId, HostApprovalRequest request) {
-        HostDetail hostDetail = hostDetailRepository.findById(userId)
+    public void reviewHostApplication(Long id, HostApprovalRequest request) {
+        HostDetail hostDetail = hostDetailRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.HOST_PROFILE_NOT_FOUND));
 
         hostDetail.setOnboardingStatus(request.status());
@@ -104,7 +104,7 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
 
             userRepository.save(user);
 
-            propertyService.approveFirstPendingPropertyByHost(userId);
+            propertyService.approveFirstPendingPropertyByHost(id);
         }
 
         hostDetailRepository.save(hostDetail);

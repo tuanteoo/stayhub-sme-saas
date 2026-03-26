@@ -16,13 +16,11 @@ public class RoomImage {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id", nullable = false)
+    @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String url;
-
-    private String caption;
 
     @Column(name = "is_thumbnail")
     @Builder.Default

@@ -12,7 +12,6 @@ ALTER TABLE host_details ADD COLUMN host_code VARCHAR(50) UNIQUE;
 -- Đánh index để tăng tốc độ truy vấn kiểm tra trùng lặp
 CREATE INDEX idx_host_code ON host_details(host_code);
 
-
 -- 1.1. Bảng Rooms (Chịu trách nhiệm về Giá và Sức chứa)
 CREATE TABLE rooms (
     id BIGSERIAL PRIMARY KEY,

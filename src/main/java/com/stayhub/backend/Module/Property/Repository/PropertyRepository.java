@@ -13,5 +13,5 @@ public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpe
     Page<Property> findByStatus(PropertyStatus status, Pageable pageable);
     Optional<Property> findBySlugAndStatus(String slug, PropertyStatus status);
 
-    Optional<Property> findFirstByHostIdAndStatusOrderByCreatedAtAsc(Long hostId, PropertyStatus status);
+    Optional<Property> findFirstByHostIdAndStatusOrderByCreatedAtAsc(Long id, PropertyStatus status);
 }

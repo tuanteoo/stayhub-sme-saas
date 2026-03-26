@@ -63,13 +63,13 @@ public class AuthController {
                 "Gửi hồ sơ đăng ký thành công! Vui lòng chờ Ban quản trị StayHub phê duyệt.");
     }
 
-    @PutMapping("/{userId}/approval-host")
+    @PutMapping("/{id}/approval-host")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ResponseData<String>> reviewApplication(
-            @PathVariable Long userId,
+            @PathVariable Long id,
             @Valid @RequestBody HostApprovalRequest request) {
 
-        hostOnboardingService.reviewHostApplication(userId, request);
+        hostOnboardingService.reviewHostApplication(id, request);
 
         String message = switch (request.status()) {
             case APPROVED -> "Đã duyệt hồ sơ và cấp quyền Chủ nhà thành công!";

@@ -9,5 +9,5 @@ public interface PropertyService {
     void createProperty(String hostEmail, PropertyCreateRequest request);
     PageResponse<PropertyCardResponse> getPropertiesForGuest(int page, int size, String sortBy, String sortDir, String destination, Integer guestCount);
     PropertyDetailResponse getPropertyBySlug(String slug);
-    void approveFirstPendingPropertyByHost(Long hostId);
+    void approveFirstPendingPropertyByHost(Long id);
 }

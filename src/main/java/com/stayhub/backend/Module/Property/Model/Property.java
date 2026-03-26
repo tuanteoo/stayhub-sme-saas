@@ -56,23 +56,7 @@ public class Property {
     private String district;
     private String province;
 
-    // Cấu trúc
-    @Column(name = "max_guests", nullable = false)
-    private Integer maxGuests;
-
-    @Column(name = "num_bedrooms")
-    private Integer numBedrooms;
-
-    @Column(name = "num_beds")
-    private Integer numBeds;
-
-    @Column(name = "num_bathrooms")
-    private Integer numBathrooms;
-
     // Tài chính (Dùng BigDecimal cho tiền tệ là chuẩn nhất)
-    @Column(name = "price_per_night", nullable = false)
-    private BigDecimal pricePerNight;
-
     @Column(name = "cleaning_fee")
     @Builder.Default
     private BigDecimal cleaningFee = BigDecimal.ZERO;
@@ -164,9 +148,10 @@ public class Property {
     @Column(name = "search_text", columnDefinition = "TEXT")
     private String searchText;
 
-    // ==========================================
-    // THỜI GIAN TẠO & CẬP NHẬT TỰ ĐỘNG
-    // ==========================================
+    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Room> rooms = new ArrayList<>();
+
     @Column(name = "created_at", updatable = false)
     @org.hibernate.annotations.CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)

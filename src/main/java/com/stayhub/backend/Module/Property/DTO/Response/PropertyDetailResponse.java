@@ -1,5 +1,7 @@
-package com.stayhub.backend.Module.Identity.DTO.Response;
+package com.stayhub.backend.Module.Property.DTO.Response;
 
+import com.stayhub.backend.Module.Identity.DTO.Response.CancellationPolicyResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
 import lombok.Builder;
 
 import java.math.BigDecimal;
@@ -12,7 +14,6 @@ public record PropertyDetailResponse(
         String slug,
         String description,
 
-        // Vị trí
         String addressDetail,
         String ward,
         String district,
@@ -20,22 +21,16 @@ public record PropertyDetailResponse(
         Double latitude,
         Double longitude,
 
-        // Cấu trúc & Tiện ích
         Integer maxGuests,
         Integer numBedrooms,
         Integer numBeds,
         Integer numBathrooms,
-        List<String> amenities,
-        List<String> imageUrls,
 
-        // Tài chính
-        BigDecimal pricePerNight,
         BigDecimal cleaningFee,
         Integer weekendSurchargePercentage,
         Integer depositPercentage,
         Boolean isPayAtCheckinAllowed,
 
-        // Nội quy & Thời gian
         String checkinAfter,
         String checkoutBefore,
         Boolean isInstantBook,
@@ -43,7 +38,6 @@ public record PropertyDetailResponse(
         Boolean isPetsAllowed,
         Boolean isPartyAllowed,
 
-        // Thống kê đánh giá
         Double ratingAvg,
         Integer reviewCount,
 
@@ -51,7 +45,11 @@ public record PropertyDetailResponse(
         String rentalTypeName,
 
         HostInfoResponse host,
+        CancellationPolicyResponse cancellationPolicy,
 
-        CancellationPolicyResponse cancellationPolicy
+        List<AmenityResponse> amenities,
+        List<String> imageUrls,
+
+        List<RoomResponse> rooms
 ) {
 }

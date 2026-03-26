@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 @Builder
 public record HostInfoResponse(
         Long id,
+        String hostCode,
         String fullName,
         String avatarUrl,
         LocalDateTime joinedAt

@@ -23,7 +23,7 @@ public enum ErrorCode {
     TOKEN_EXPIRED(1010, "Mã xác thực đã hết hạn, vui lòng yêu cầu gửi lại", HttpStatus.BAD_REQUEST),
     USER_ALREADY_VERIFIED(1011, "Tài khoản này đã được xác thực trước đó", HttpStatus.BAD_REQUEST),
     HOST_PROFILE_NOT_FOUND(1012, "Không tìm thấy hồ sơ Chủ nhà của User này", HttpStatus.NOT_FOUND),
-    HOST_NOT_APPROVED(1013, "Hồ sơ chưa được duyệt! Chỉ Chủ nhà đã xác thực mới có quyền đăng tin", HttpStatus.FORBIDDEN),
+    HOST_NOT_APPROVED(1013, "Chỉ Chủ nhà đã xác thực mới có quyền đăng tin", HttpStatus.FORBIDDEN),
     CATEGORY_NOT_FOUND(1014, "Không tìm thấy danh mục nhà", HttpStatus.NOT_FOUND),
     RENTAL_TYPE_NOT_FOUND(1015, "Không tìm thấy loại hình cho thuê", HttpStatus.NOT_FOUND),
     POLICY_NOT_FOUND(1016, "Không tìm thấy chính sách hủy phòng", HttpStatus.NOT_FOUND),

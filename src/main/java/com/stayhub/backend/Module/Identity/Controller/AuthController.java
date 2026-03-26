@@ -56,7 +56,7 @@ public class AuthController {
     @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseData<String> submitApplication(
             Principal principal,
-            @Valid @RequestBody HostVerificationRequest request) {
+            @Valid @RequestBody HostRegistrationWithPropertyRequest request) {
         hostOnboardingService.submitHostApplication(principal.getName(), request);
 
         return new ResponseData<>(201,

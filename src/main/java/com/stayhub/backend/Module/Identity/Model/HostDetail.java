@@ -28,6 +28,9 @@ public class HostDetail{
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(name = "host_code", unique = true)
+    private String hostCode;
+
     @Column(name = "brand_name")
     private String brandName;
 

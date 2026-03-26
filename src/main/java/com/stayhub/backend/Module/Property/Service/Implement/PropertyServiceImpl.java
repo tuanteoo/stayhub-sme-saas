@@ -6,13 +6,15 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.CancellationPolicyResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
-import com.stayhub.backend.Module.Identity.DTO.Response.PropertyDetailResponse;
+import com.stayhub.backend.Module.Property.DTO.Response.AmenityResponse;
+import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
+import com.stayhub.backend.Module.Property.DTO.Response.RoomResponse;
 import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
@@ -23,10 +25,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +51,8 @@ public class PropertyServiceImpl implements PropertyService {
         HostDetail hostDetail = hostDetailRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.HOST_PROFILE_NOT_FOUND));
 
-        if (hostDetail.getOnboardingStatus() != HostOnboardingStatus.APPROVED) {
+        if (hostDetail.getOnboardingStatus() != HostOnboardingStatus.APPROVED &&
+                hostDetail.getOnboardingStatus() != HostOnboardingStatus.PENDING_REVIEW) {
             throw new AppException(ErrorCode.HOST_NOT_APPROVED);
         }
 
@@ -66,49 +70,96 @@ public class PropertyServiceImpl implements PropertyService {
                 .category(category)
                 .rentalType(rentalType)
                 .cancellationPolicy(policy)
-
-                // Address
                 .province(request.province())
                 .district(request.district())
                 .ward(request.ward())
                 .addressDetail(request.addressDetail())
-
-                // Structure
-                .maxGuests(request.maxGuests())
-                .numBedrooms(request.numBedrooms())
-                .numBeds(request.numBeds())
-                .numBathrooms(request.numBathrooms())
-
-                // Content
                 .name(request.name())
                 .description(request.description())
                 .slug(SlugUtils.toSlug(request.name() + "-" + System.currentTimeMillis()))
-
-                // Price and Payment
-                .pricePerNight(request.pricePerNight())
                 .weekendSurchargePercentage(request.weekendSurchargePercentage())
                 .cleaningFee(request.cleaningFee())
                 .isPayAtCheckinAllowed(request.isPayAtCheckinAllowed())
                 .depositPercentage(request.isPayAtCheckinAllowed() ? request.depositPercentage() : 100)
-
-                // Status Default
                 .status(PropertyStatus.PENDING_REVIEW)
                 .build();
 
-        List<Amenity> amenityList = amenityRepository.findAllById(request.amenityIds());
-        property.getAmenities().addAll(amenityList);
-
-        Set<PropertyImage> images = new HashSet<>();
-        List<String> urls = request.imageUrls();
-        for (int i = 0; i < urls.size(); i++) {
-            images.add(PropertyImage.builder()
-                    .property(property)
-                    .url(urls.get(i))
-                    .displayOrder(i)
-                    .isThumbnail(i == 0)
-                    .build());
+        Set<Long> allAmenityIds = new HashSet<>();
+        if (request.amenityIds() != null) {
+            allAmenityIds.addAll(request.amenityIds());
         }
-        property.getImages().addAll(images);
+
+        if (request.rooms() != null) {
+            request.rooms().stream()
+                    .filter(r -> r.amenityIds() != null)
+                    .flatMap(r -> r.amenityIds().stream())
+                    .forEach(allAmenityIds::add);
+        }
+
+        Map<Long, Amenity> amenityMap = new HashMap<>();
+        if (!allAmenityIds.isEmpty()) {
+            amenityRepository.findAllById(allAmenityIds)
+                    .forEach(amenity -> amenityMap.put(amenity.getId(), amenity));
+        }
+
+        if (request.amenityIds() != null) {
+            Set<Amenity> propertyAmenities = request.amenityIds().stream()
+                    .map(amenityMap::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            property.getAmenities().addAll(propertyAmenities);
+        }
+
+        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
+            IntStream.range(0, request.imageUrls().size())
+                    .forEach(i -> property.getImages().add(PropertyImage.builder()
+                            .property(property)
+                            .url(request.imageUrls().get(i))
+                            .displayOrder(i)
+                            .isThumbnail(i == 0)
+                            .build()));
+        }
+
+        Set<Long> propertyAmenityIds = request.amenityIds() != null
+                ? new HashSet<>(request.amenityIds())
+                : Collections.emptySet();
+
+        if (request.rooms() != null) {
+            List<Room> rooms = request.rooms().stream().map(roomReq -> {
+                Room room = Room.builder()
+                        .property(property)
+                        .name(roomReq.name())
+                        .description(roomReq.description())
+                        .pricePerNight(roomReq.pricePerNight())
+                        .maxGuests(roomReq.maxGuests())
+                        .numBeds(roomReq.numBeds())
+                        .numBathrooms(roomReq.numBathrooms())
+                        .build();
+
+                if (roomReq.amenityIds() != null) {
+                    Set<Amenity> roomAmenities = roomReq.amenityIds().stream()
+                            .filter(id -> !propertyAmenityIds.contains(id))
+                            .map(amenityMap::get)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toSet());
+                    room.getAmenities().addAll(roomAmenities);
+                }
+
+                if (roomReq.imageUrls() != null && !roomReq.imageUrls().isEmpty()) {
+                    IntStream.range(0, roomReq.imageUrls().size())
+                            .forEach(i -> room.getImages().add(RoomImage.builder()
+                                    .room(room)
+                                    .url(roomReq.imageUrls().get(i))
+                                    .displayOrder(i)
+                                    .isThumbnail(i == 0)
+                                    .build()));
+                }
+
+                return room;
+            }).toList();
+
+            property.getRooms().addAll(rooms);
+        }
 
         propertyRepository.save(property);
     }
@@ -126,9 +177,23 @@ public class PropertyServiceImpl implements PropertyService {
                     .findFirst()
                     .orElse(null);
 
-            List<String> amenityNames = property.getAmenities().stream()
+            Set<String> allAmenityNames = Stream.concat(
+                            property.getAmenities().stream(),
+                            property.getRooms().stream().flatMap(room -> room.getAmenities().stream())
+                    )
                     .map(Amenity::getName)
-                    .toList();
+                    .collect(Collectors.toSet());
+
+            BigDecimal startingPrice = property.getRooms().stream()
+                    .map(Room::getPricePerNight)
+                    .filter(Objects::nonNull)
+                    .min(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+
+            int totalGuests = property.getRooms().stream().mapToInt(Room::getMaxGuests).sum();
+            int totalRooms = property.getRooms().size();
+            int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
+            int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
 
             return new PropertyCardResponse(
                     property.getId(),
@@ -136,14 +201,14 @@ public class PropertyServiceImpl implements PropertyService {
                     property.getSlug(),
                     property.getProvince(),
                     property.getDistrict(),
-                    property.getPricePerNight(),
+                    startingPrice,
                     thumbnailUrl,
                     property.getRatingAvg(),
-                    property.getMaxGuests(),
-                    property.getNumBedrooms(),
-                    property.getNumBeds(),
-                    property.getNumBathrooms(),
-                    amenityNames
+                    totalGuests,
+                    totalRooms,
+                    totalBeds,
+                    totalBathrooms,
+                    new ArrayList<>(allAmenityNames)
             );
         }).toList();
 
@@ -160,15 +225,6 @@ public class PropertyServiceImpl implements PropertyService {
     public PropertyDetailResponse getPropertyBySlug(String slug) {
         Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở này hoặc bài đăng chưa được duyệt!"));
-
-        List<String> amenityNames = property.getAmenities().stream()
-                .map(Amenity::getName)
-                .toList();
-
-        List<String> imageUrls = property.getImages().stream()
-                .sorted(Comparator.comparing(PropertyImage::getDisplayOrder))
-                .map(PropertyImage::getUrl)
-                .toList();
 
         User host = property.getHost();
         String hostName = host.getEmail();
@@ -194,6 +250,54 @@ public class PropertyServiceImpl implements PropertyService {
                 .daysBeforeCheckin(property.getCancellationPolicy().getDaysBeforeCheckin())
                 .build();
 
+        List<String> allImageUrls = property.getImages().stream()
+                .sorted(Comparator.comparing(PropertyImage::getDisplayOrder))
+                .map(PropertyImage::getUrl)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        property.getRooms().forEach(room -> {
+            room.getImages().stream()
+                    .sorted(Comparator.comparing(RoomImage::getDisplayOrder))
+                    .map(RoomImage::getUrl)
+                    .forEach(allImageUrls::add);
+        });
+
+        Set<AmenityResponse> allAmenities = Stream.concat(
+                        property.getAmenities().stream(),
+                        property.getRooms().stream().flatMap(room -> room.getAmenities().stream())
+                )
+                .map(a -> new AmenityResponse(a.getId(), a.getName(), a.getIconName(), a.getType()))
+                .collect(Collectors.toSet());
+
+        int totalGuests = property.getRooms().stream().mapToInt(Room::getMaxGuests).sum();
+        int totalRooms = property.getRooms().size();
+        int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
+        int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
+
+        List<RoomResponse> roomResponses = property.getRooms().stream().map(room -> {
+            List<String> roomAmenities = room.getAmenities().stream()
+                    .map(Amenity::getName)
+                    .toList();
+
+            String thumbnailUrl = room.getImages().stream()
+                    .filter(RoomImage::getIsThumbnail)
+                    .map(RoomImage::getUrl)
+                    .findFirst()
+                    .orElse(null);
+
+            return new RoomResponse(
+                    room.getId(),
+                    room.getName(),
+                    room.getDescription(),
+                    room.getPricePerNight(),
+                    room.getMaxGuests(),
+                    room.getNumBeds(),
+                    room.getNumBathrooms(),
+                    roomAmenities,
+                    thumbnailUrl
+            );
+        }).toList();
+
         return PropertyDetailResponse.builder()
                 .id(property.getId())
                 .name(property.getName())
@@ -207,12 +311,11 @@ public class PropertyServiceImpl implements PropertyService {
                 .latitude(property.getLatitude())
                 .longitude(property.getLongitude())
 
-                .maxGuests(property.getMaxGuests())
-                .numBedrooms(property.getNumBedrooms())
-                .numBeds(property.getNumBeds())
-                .numBathrooms(property.getNumBathrooms())
+                .maxGuests(totalGuests)
+                .numBedrooms(totalRooms)
+                .numBeds(totalBeds)
+                .numBathrooms(totalBathrooms)
 
-                .pricePerNight(property.getPricePerNight())
                 .cleaningFee(property.getCleaningFee())
                 .weekendSurchargePercentage(property.getWeekendSurchargePercentage())
                 .depositPercentage(property.getDepositPercentage())
@@ -234,8 +337,24 @@ public class PropertyServiceImpl implements PropertyService {
                 .host(hostInfo)
                 .cancellationPolicy(cancellationPolicy)
 
-                .amenities(amenityNames)
-                .imageUrls(imageUrls)
+                .amenities(new ArrayList<>(allAmenities))
+                .imageUrls(allImageUrls)
+                .rooms(roomResponses)
                 .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void approveFirstPendingPropertyByHost(Long hostId) {
+        Optional<Property> firstPendingProperty = propertyRepository.findFirstByHostIdAndStatusOrderByCreatedAtAsc(
+                hostId,
+                PropertyStatus.PENDING_REVIEW
+        );
+
+        if (firstPendingProperty.isPresent()) {
+            Property property = firstPendingProperty.get();
+            property.setStatus(PropertyStatus.PUBLISHED);
+            propertyRepository.save(property);
+        }
     }
 }

@@ -1,0 +1,17 @@
+package com.stayhub.backend.Module.Property.DTO.Response;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+public record RoomResponse(
+        Long id,
+        String name,
+        String description,
+        BigDecimal pricePerNight,
+        Integer maxGuests,
+        Integer numBeds,
+        Integer numBathrooms,
+        List<String> amenities,
+        String thumbnailUrl
+) {
+}

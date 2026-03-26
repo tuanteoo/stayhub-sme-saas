@@ -1,5 +1,6 @@
 package com.stayhub.backend.Module.Property.DTO.Request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -31,25 +32,6 @@ public record PropertyCreateRequest(
         String addressDetail,
 
         // ==========================================
-        // 3. CẤU TRÚC PHÒNG
-        // ==========================================
-        @NotNull(message = "Số khách tối đa không được để trống")
-        @Min(value = 1, message = "Số khách tối đa phải lớn hơn 0")
-        Integer maxGuests,
-
-        @NotNull(message = "Số phòng ngủ không được để trống")
-        @Min(value = 0, message = "Số phòng ngủ không được âm")
-        Integer numBedrooms,
-
-        @NotNull(message = "Số giường không được để trống")
-        @Min(value = 0, message = "Số giường không được âm")
-        Integer numBeds,
-
-        @NotNull(message = "Số phòng tắm không được để trống")
-        @Min(value = 0, message = "Số phòng tắm không được âm")
-        Integer numBathrooms,
-
-        // ==========================================
         // 4. THÔNG TIN BÀI ĐĂNG
         // ==========================================
         @NotBlank(message = "Tên chỗ ở không được để trống")
@@ -62,10 +44,6 @@ public record PropertyCreateRequest(
         // ==========================================
         // 5. ĐỊNH GIÁ & THANH TOÁN
         // ==========================================
-        @NotNull(message = "Giá mỗi đêm không được để trống")
-        @DecimalMin(value = "0.0", inclusive = false, message = "Giá mỗi đêm phải lớn hơn 0")
-        BigDecimal pricePerNight,
-
         @Min(value = 0, message = "Phụ phí cuối tuần không được âm")
         @Max(value = 100, message = "Phụ phí cuối tuần tối đa là 100%")
         Integer weekendSurchargePercentage,
@@ -91,6 +69,9 @@ public record PropertyCreateRequest(
 
         @NotNull(message = "Danh sách ảnh không được để trống")
         @Size(min = 5, message = "Vui lòng tải lên tối thiểu 5 hình ảnh (Mặt tiền, phòng ngủ, phòng tắm...) để đảm bảo chất lượng tin đăng")
-        List<String> imageUrls
+        List<String> imageUrls,
+
+        @NotEmpty(message = "Chỗ ở phải có ít nhất 1 phòng")
+        @Valid List<RoomCreateRequest> rooms
 ) {
 }

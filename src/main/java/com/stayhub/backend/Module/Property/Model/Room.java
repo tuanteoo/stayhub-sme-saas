@@ -40,6 +40,11 @@ public class Room extends AbstractEntity {
     @Column(name = "num_bathrooms")
     private Integer numBathrooms;
 
+    @Builder.Default
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cancellation_policy_id")
+    private CancellationPolicy cancellationPolicy = CancellationPolicy.builder().id(1L).build();
+
     @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;

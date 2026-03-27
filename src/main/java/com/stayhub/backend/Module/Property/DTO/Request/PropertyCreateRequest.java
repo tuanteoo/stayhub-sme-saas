@@ -10,11 +10,14 @@ public record PropertyCreateRequest(
         // ==========================================
         // 1. TỔNG QUAN & LOẠI HÌNH
         // ==========================================
+        @NotNull(message = "Vui lòng chọn hình thức cho thuê (Rental Type)")
+        Long rentalTypeId,
+
         @NotNull(message = "Vui lòng chọn danh mục nhà (Category)")
         Long categoryId,
 
-        @NotNull(message = "Vui lòng chọn hình thức cho thuê (Rental Type)")
-        Long rentalTypeId,
+        @NotEmpty(message = "Vui lòng chọn ít nhất 1 tiện ích")
+        List<Long> amenityIds,
 
         // ==========================================
         // 2. VỊ TRÍ ĐỊA LÝ
@@ -30,6 +33,12 @@ public record PropertyCreateRequest(
 
         @NotBlank(message = "Địa chỉ chi tiết (Số nhà, Tên đường) không được để trống")
         String addressDetail,
+
+        @NotNull(message = "Vĩ độ không được trống")
+        Double latitude,
+
+        @NotNull(message = "Kinh độ không được trống")
+        Double longitude,
 
         // ==========================================
         // 4. THÔNG TIN BÀI ĐĂNG
@@ -51,21 +60,9 @@ public record PropertyCreateRequest(
         @DecimalMin(value = "0.0", message = "Phí dọn dẹp không được âm")
         BigDecimal cleaningFee,
 
-        @NotNull(message = "Vui lòng cấu hình Cho phép thanh toán khi nhận phòng")
-        Boolean isPayAtCheckinAllowed,
-
-        @Min(value = 0, message = "Mức cọc không được nhỏ hơn 0%")
-        @Max(value = 100, message = "Mức cọc không được lớn hơn 100%")
-        Integer depositPercentage,
-
         // ==========================================
         // 6. CHÍNH SÁCH, TIỆN ÍCH & HÌNH ẢNH
         // ==========================================
-        @NotNull(message = "Vui lòng chọn Chính sách hủy phòng")
-        Long cancellationPolicyId,
-
-        @NotEmpty(message = "Vui lòng chọn ít nhất 1 tiện ích")
-        List<Long> amenityIds,
 
         @NotNull(message = "Danh sách ảnh không được để trống")
         @Size(min = 5, message = "Vui lòng tải lên tối thiểu 5 hình ảnh (Mặt tiền, phòng ngủ, phòng tắm...) để đảm bảo chất lượng tin đăng")

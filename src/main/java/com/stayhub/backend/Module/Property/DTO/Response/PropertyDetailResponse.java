@@ -1,6 +1,5 @@
 package com.stayhub.backend.Module.Property.DTO.Response;
 
-import com.stayhub.backend.Module.Identity.DTO.Response.CancellationPolicyResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
 import lombok.Builder;
 
@@ -12,8 +11,12 @@ public record PropertyDetailResponse(
         Long id,
         String name,
         String slug,
-        String description,
 
+        List<String> imageUrls,
+        List<AmenityResponse> amenities,
+        HostInfoResponse host,
+
+        String description,
         String addressDetail,
         String ward,
         String district,
@@ -31,8 +34,10 @@ public record PropertyDetailResponse(
         Integer depositPercentage,
         Boolean isPayAtCheckinAllowed,
 
-        String checkinAfter,
-        String checkoutBefore,
+        String checkInAfter,
+        String checkInBefore,
+        String checkOutAfter,
+        String checkOutBefore,
         Boolean isInstantBook,
         Boolean isSmokingAllowed,
         Boolean isPetsAllowed,
@@ -43,12 +48,6 @@ public record PropertyDetailResponse(
 
         String categoryName,
         String rentalTypeName,
-
-        HostInfoResponse host,
-        CancellationPolicyResponse cancellationPolicy,
-
-        List<AmenityResponse> amenities,
-        List<String> imageUrls,
 
         List<RoomResponse> rooms
 ) {

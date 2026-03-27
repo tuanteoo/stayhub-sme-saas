@@ -65,17 +65,13 @@ public class Property {
     @Builder.Default
     private Integer weekendSurchargePercentage = 0;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cancellation_policy_id")
-    private CancellationPolicy cancellationPolicy;
-
     @Column(name = "is_pay_at_checkin_allowed")
     @Builder.Default
-    private Boolean isPayAtCheckinAllowed = false;
+    private Boolean isPayAtCheckinAllowed = true;
 
     @Column(name = "deposit_percentage")
     @Builder.Default
-    private Integer depositPercentage = 100;
+    private Integer depositPercentage = 0;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
@@ -110,29 +106,38 @@ public class Property {
     private String currency = "VND";
 
     @Column(name = "checkin_after", length = 10)
-    private String checkinAfter;
+    @Builder.Default
+    private String checkinAfter = "14:00";
+
+    @Column(name = "checkin_before", length = 10)
+    @Builder.Default
+    private String checkinBefore = "23:30";
+
+    @Column(name = "checkout_after", length = 10)
+    @Builder.Default
+    private String checkoutAfter = "01:00";
 
     @Column(name = "checkout_before", length = 10)
-    private String checkoutBefore;
-
+    @Builder.Default
+    private String checkoutBefore = "12:00";
     // ==========================================
     // NỘI QUY CHỖ Ở & CÀI ĐẶT ĐẶT PHÒNG
     // ==========================================
     @Column(name = "is_instant_book")
     @Builder.Default
-    private Boolean isInstantBook = false;
+    private Boolean isInstantBook = true;
 
     @Column(name = "is_smoking_allowed")
     @Builder.Default
-    private Boolean isSmokingAllowed = false;
+    private Boolean isSmokingAllowed = true;
 
     @Column(name = "is_pets_allowed")
     @Builder.Default
-    private Boolean isPetsAllowed = false;
+    private Boolean isPetsAllowed = true;
 
     @Column(name = "is_party_allowed")
     @Builder.Default
-    private Boolean isPartyAllowed = false;
+    private Boolean isPartyAllowed = true;
 
     // ==========================================
     // THỐNG KÊ ĐÁNH GIÁ (Dùng để hiển thị ngoài Card)

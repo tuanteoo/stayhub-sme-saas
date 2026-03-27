@@ -5,8 +5,9 @@ import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
-import com.stayhub.backend.Module.Identity.DTO.Response.CancellationPolicyResponse;
+import com.stayhub.backend.Module.Property.DTO.Response.CancellationPolicyResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
+import com.stayhub.backend.Module.Property.DTO.Request.RoomCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.AmenityResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
@@ -16,6 +17,8 @@ import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.RoomResponse;
+import com.stayhub.backend.Module.Property.Mapper.AmenityMapper;
+import com.stayhub.backend.Module.Property.Mapper.RoomMapper;
 import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
@@ -42,6 +45,7 @@ public class PropertyServiceImpl implements PropertyService {
     private final RentalTypeRepository rentalTypeRepository;
     private final CancellationPolicyRepository cancellationPolicyRepository;
     private final AmenityRepository amenityRepository;
+    private final RoomMapper roomMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -63,14 +67,13 @@ public class PropertyServiceImpl implements PropertyService {
         RentalType rentalType = rentalTypeRepository.findById(request.rentalTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại hình cho thuê!"));
 
-        CancellationPolicy policy = cancellationPolicyRepository.findById(request.cancellationPolicyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chính sách hủy phòng!"));
 
         Property property = Property.builder()
                 .host(currentUser)
                 .category(category)
                 .rentalType(rentalType)
-                .cancellationPolicy(policy)
+                .latitude(request.latitude())
+                .longitude(request.longitude())
                 .province(request.province())
                 .district(request.district())
                 .ward(request.ward())
@@ -80,8 +83,6 @@ public class PropertyServiceImpl implements PropertyService {
                 .slug(SlugUtils.toSlug(request.name() + "-" + System.currentTimeMillis()))
                 .weekendSurchargePercentage(request.weekendSurchargePercentage())
                 .cleaningFee(request.cleaningFee())
-                .isPayAtCheckinAllowed(request.isPayAtCheckinAllowed())
-                .depositPercentage(request.isPayAtCheckinAllowed() ? request.depositPercentage() : 100)
                 .status(PropertyStatus.PENDING_REVIEW)
                 .build();
 
@@ -130,7 +131,10 @@ public class PropertyServiceImpl implements PropertyService {
                 : Collections.emptySet();
 
         if (request.rooms() != null) {
+
+
             List<Room> rooms = request.rooms().stream().map(roomReq -> {
+
                 Room room = Room.builder()
                         .property(property)
                         .name(roomReq.name())
@@ -247,14 +251,6 @@ public class PropertyServiceImpl implements PropertyService {
                 .joinedAt(host.getHostDetail().getCreatedAt())
                 .build();
 
-        CancellationPolicyResponse cancellationPolicy = CancellationPolicyResponse.builder()
-                .id(property.getCancellationPolicy().getId())
-                .name(property.getCancellationPolicy().getName())
-                .description(property.getCancellationPolicy().getDescription())
-                .refundPercentage(property.getCancellationPolicy().getRefundPercentage())
-                .daysBeforeCheckin(property.getCancellationPolicy().getDaysBeforeCheckin())
-                .build();
-
         List<String> allImageUrls = property.getImages().stream()
                 .sorted(Comparator.comparing(PropertyImage::getDisplayOrder))
                 .map(PropertyImage::getUrl)
@@ -279,29 +275,8 @@ public class PropertyServiceImpl implements PropertyService {
         int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
         int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
 
-        List<RoomResponse> roomResponses = property.getRooms().stream().map(room -> {
-            List<String> roomAmenities = room.getAmenities().stream()
-                    .map(Amenity::getName)
-                    .toList();
-
-            String thumbnailUrl = room.getImages().stream()
-                    .filter(RoomImage::getIsThumbnail)
-                    .map(RoomImage::getUrl)
-                    .findFirst()
-                    .orElse(null);
-
-            return new RoomResponse(
-                    room.getId(),
-                    room.getName(),
-                    room.getDescription(),
-                    room.getPricePerNight(),
-                    room.getMaxGuests(),
-                    room.getNumBeds(),
-                    room.getNumBathrooms(),
-                    roomAmenities,
-                    thumbnailUrl
-            );
-        }).toList();
+        List<RoomResponse> roomResponses = property.getRooms().stream().
+                map(roomMapper::toResponse).toList();
 
         return PropertyDetailResponse.builder()
                 .id(property.getId())
@@ -326,8 +301,10 @@ public class PropertyServiceImpl implements PropertyService {
                 .depositPercentage(property.getDepositPercentage())
                 .isPayAtCheckinAllowed(property.getIsPayAtCheckinAllowed())
 
-                .checkinAfter(property.getCheckinAfter())
-                .checkoutBefore(property.getCheckoutBefore())
+                .checkInAfter(property.getCheckinAfter())
+                .checkInBefore(property.getCheckinBefore())
+                .checkOutAfter(property.getCheckoutAfter())
+                .checkOutBefore(property.getCheckoutBefore())
                 .isInstantBook(property.getIsInstantBook())
                 .isSmokingAllowed(property.getIsSmokingAllowed())
                 .isPetsAllowed(property.getIsPetsAllowed())
@@ -340,7 +317,6 @@ public class PropertyServiceImpl implements PropertyService {
                 .rentalTypeName(property.getRentalType().getName())
 
                 .host(hostInfo)
-                .cancellationPolicy(cancellationPolicy)
 
                 .amenities(new ArrayList<>(allAmenities))
                 .imageUrls(allImageUrls)

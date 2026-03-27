@@ -22,14 +22,14 @@ public class AmenityController {
 
     @PostMapping("/admin/amenities")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseData<AmenityResponse> createCategory(@Valid @RequestBody AmenityRequest request) {
+    public ResponseData<AmenityResponse> createAmenity(@Valid @RequestBody AmenityRequest request) {
         AmenityResponse response = amenityService.createAmenity(request);
         return new ResponseData<>(201, "Tạo tiện ích thành công", response);
     }
 
     @Operation(summary = "Lấy danh sách tiện tích")
     @GetMapping("/public/amenities")
-    public ResponseData<List<AmenityResponse>> getAllCategories() {
+    public ResponseData<List<AmenityResponse>> getAllAmenity() {
         List<AmenityResponse> response = amenityService.getAllAmenities();
         return new ResponseData<>(200, "Lấy danh sách tiện ích thành công", response);
     }

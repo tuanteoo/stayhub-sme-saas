@@ -8,7 +8,6 @@ public record CategoryResponse(
         String name,
         String slug,
         String description,
-        String iconName,
-        Boolean isActive
+        String iconName
 ) {
 }

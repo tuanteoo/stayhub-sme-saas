@@ -3,6 +3,9 @@ package com.stayhub.backend.Module.Property.Model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "categories")
 @Getter
@@ -26,6 +29,10 @@ public class Category {
 
     @Column(name = "icon_name")
     private String iconName;
+
+    @ManyToMany(mappedBy = "categories")
+    @Builder.Default
+    private List<RentalType> rentalTypes = new ArrayList<>();
 
     @Column(name = "is_active")
     @Builder.Default

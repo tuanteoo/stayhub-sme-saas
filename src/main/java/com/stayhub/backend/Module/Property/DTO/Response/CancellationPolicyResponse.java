@@ -1,4 +1,4 @@
-package com.stayhub.backend.Module.Identity.DTO.Response;
+package com.stayhub.backend.Module.Property.DTO.Response;
 
 import lombok.Builder;
 

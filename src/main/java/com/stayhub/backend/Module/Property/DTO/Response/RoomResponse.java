@@ -11,7 +11,8 @@ public record RoomResponse(
         Integer maxGuests,
         Integer numBeds,
         Integer numBathrooms,
-        List<String> amenities,
-        String thumbnailUrl
+        List<AmenityResponse> amenities,
+        String thumbnailUrl,
+        CancellationPolicyResponse cancellationPolicyResponse
 ) {
 }

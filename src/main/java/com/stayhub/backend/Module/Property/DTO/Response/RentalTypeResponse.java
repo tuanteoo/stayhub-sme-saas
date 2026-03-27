@@ -2,6 +2,8 @@ package com.stayhub.backend.Module.Property.DTO.Response;
 
 import lombok.Builder;
 
+import java.util.List;
+
 @Builder
 public record RentalTypeResponse(
         Long id,
@@ -9,6 +11,6 @@ public record RentalTypeResponse(
         String slug,
         String description,
         String iconName,
-        Boolean isActive
+        List<CategoryResponse> categoryResponses
 ) {
 }

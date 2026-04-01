@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/properties")
@@ -50,9 +51,11 @@ public class PropertyController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String destination,
-            @RequestParam(required = false) Integer guestCount) {
+            @RequestParam(required = false) Integer guestCount,
+            @RequestParam(required = false) LocalDate checkInDate,
+            @RequestParam(required = false) LocalDate checkOutDate){
 
-        PageResponse<PropertyCardResponse> properties = propertyService.getPropertiesForGuest(page, size, sortBy, sortDir,destination,guestCount);
+        PageResponse<PropertyCardResponse> properties = propertyService.getPropertiesForGuest(page, size, sortBy, sortDir,destination,guestCount,checkInDate,checkOutDate);
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", properties));
     }

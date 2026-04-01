@@ -1,6 +1,7 @@
 package com.stayhub.backend.Module.Property.DTO.Response;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public record RoomResponse(
@@ -13,6 +14,7 @@ public record RoomResponse(
         Integer numBathrooms,
         List<AmenityResponse> amenities,
         String thumbnailUrl,
-        CancellationPolicyResponse cancellationPolicyResponse
+        CancellationPolicyResponse cancellationPolicyResponse,
+        List<LocalDate> blockedDates
 ) {
 }

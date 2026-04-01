@@ -48,6 +48,7 @@ public record PropertyDetailResponse(
 
         String categoryName,
         String rentalTypeName,
+        String rentalTypeSlug,
 
         List<RoomResponse> rooms
 ) {

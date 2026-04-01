@@ -6,7 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpecificationExecutor<Property> {
@@ -14,4 +17,28 @@ public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpe
     Optional<Property> findBySlugAndStatus(String slug, PropertyStatus status);
 
     Optional<Property> findFirstByHostIdAndStatusOrderByCreatedAtAsc(Long id, PropertyStatus status);
+
+    @Query("""
+        SELECT DISTINCT p FROM Property p
+        JOIN p.rooms r
+        WHERE p.status = 'PUBLISHED'
+        AND (:province IS NULL OR p.province = :province)
+        AND (:district IS NULL OR p.district = :district)
+        AND r.maxGuests >= :numGuests
+        AND NOT EXISTS (
+            SELECT 1 FROM RoomAvailability ra
+            WHERE ra.room.id = r.id
+            AND ra.date >= :checkInDate 
+            AND ra.date < :checkOutDate 
+            AND ra.isAvailable = false
+        )
+    """)
+    Page<Property> searchAvailableProperties(
+            @Param("province") String province,
+            @Param("district") String district,
+            @Param("numGuests") Integer numGuests,
+            @Param("checkInDate") LocalDate checkInDate,
+            @Param("checkOutDate") LocalDate checkOutDate,
+            Pageable pageable
+    );
 }

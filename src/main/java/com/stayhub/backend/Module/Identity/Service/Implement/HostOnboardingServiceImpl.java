@@ -52,7 +52,7 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void submitHostApplication(String email, HostRegistrationWithPropertyRequest request) {
+    public String submitHostApplication(String email, HostRegistrationWithPropertyRequest request) {
 
         User currentUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản người dùng!"));
@@ -80,6 +80,8 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
         hostDetailRepository.save(hostDetail);
 
         propertyService.createProperty(email, request.firstProperty());
+
+        return hostDetail.getHostCode();
     }
 
     @Override

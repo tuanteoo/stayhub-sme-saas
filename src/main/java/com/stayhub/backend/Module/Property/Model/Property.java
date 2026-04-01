@@ -56,7 +56,6 @@ public class Property {
     private String district;
     private String province;
 
-    // Tài chính (Dùng BigDecimal cho tiền tệ là chuẩn nhất)
     @Column(name = "cleaning_fee")
     @Builder.Default
     private BigDecimal cleaningFee = BigDecimal.ZERO;

@@ -4,18 +4,23 @@ import com.stayhub.backend.Common.Util.PropertyStatus;
 import com.stayhub.backend.Common.Util.StringUtil;
 import com.stayhub.backend.Module.Property.Model.Property;
 import com.stayhub.backend.Module.Property.Model.Room;
+import com.stayhub.backend.Module.Property.Model.RoomAvailability;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PropertySpecification {
     public static Specification<Property> buildSearchFilter(
             String destination,
-            Integer guestCount) {
+            Integer guestCount,
+            LocalDate checkInDate,
+            LocalDate checkOutDate) {
 
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -28,14 +33,31 @@ public class PropertySpecification {
                 predicates.add(criteriaBuilder.like(root.get("searchText"), searchPattern));
             }
 
+            Join<Property, Room> roomJoin = root.join("rooms");
+
             if (guestCount != null && guestCount > 0) {
-                Subquery<Integer> subquery = query.subquery(Integer.class);
-                Root<Room> roomRoot = subquery.from(Room.class);
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(roomJoin.get("maxGuests"), guestCount));
+            }
 
-                subquery.select(criteriaBuilder.sum(roomRoot.get("maxGuests")));
-                subquery.where(criteriaBuilder.equal(roomRoot.get("property"), root));
+            if (checkInDate != null && checkOutDate != null) {
+                Subquery<Integer> availabilitySubquery = query.subquery(Integer.class);
+                Root<RoomAvailability> availabilityRoot = availabilitySubquery.from(RoomAvailability.class);
+                availabilitySubquery.select(criteriaBuilder.literal(1));
 
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(subquery, guestCount));
+                Predicate isSameRoom = criteriaBuilder.equal(availabilityRoot.get("room"), roomJoin);
+                Predicate isDateInRange = criteriaBuilder.and(
+                        criteriaBuilder.greaterThanOrEqualTo(availabilityRoot.get("date"), checkInDate),
+                        criteriaBuilder.lessThan(availabilityRoot.get("date"), checkOutDate)
+                );
+                Predicate isNotAvailable = criteriaBuilder.equal(availabilityRoot.get("isAvailable"), false);
+
+                availabilitySubquery.where(isSameRoom, isDateInRange, isNotAvailable);
+
+                predicates.add(criteriaBuilder.not(criteriaBuilder.exists(availabilitySubquery)));
+            }
+
+            if (query != null) {
+                query.distinct(true);
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

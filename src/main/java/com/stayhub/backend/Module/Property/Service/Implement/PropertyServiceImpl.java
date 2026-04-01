@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -66,7 +67,6 @@ public class PropertyServiceImpl implements PropertyService {
 
         RentalType rentalType = rentalTypeRepository.findById(request.rentalTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại hình cho thuê!"));
-
 
         Property property = Property.builder()
                 .host(currentUser)
@@ -164,6 +164,17 @@ public class PropertyServiceImpl implements PropertyService {
                                     .build()));
                 }
 
+                LocalDate today = LocalDate.now();
+                List<RoomAvailability> availabilities = java.util.stream.IntStream.range(0, 365)
+                        .mapToObj(i -> RoomAvailability.builder()
+                                .room(room)
+                                .date(today.plusDays(i))
+                                .isAvailable(true)
+                                .priceModifier(BigDecimal.ZERO)
+                                .build())
+                        .toList();
+                room.getAvailabilities().addAll(availabilities);
+
                 return room;
             }).toList();
 
@@ -174,9 +185,9 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PageResponse<PropertyCardResponse> getPropertiesForGuest(int page, int size, String sortBy, String sortDir, String destination, Integer guestCount) {
+    public PageResponse<PropertyCardResponse> getPropertiesForGuest(int page, int size, String sortBy, String sortDir, String destination, Integer guestCount, LocalDate checkInDate, LocalDate checkOutDate) {
         Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
-        Specification<Property> spec = PropertySpecification.buildSearchFilter(destination, guestCount);
+        Specification<Property> spec = PropertySpecification.buildSearchFilter(destination, guestCount, checkInDate, checkOutDate);
         Page<Property> propertyPage = propertyRepository.findAll(spec, pageable);
 
         List<PropertyCardResponse> cardResponses = propertyPage.stream().map(property -> {
@@ -315,6 +326,7 @@ public class PropertyServiceImpl implements PropertyService {
 
                 .categoryName(property.getCategory().getName())
                 .rentalTypeName(property.getRentalType().getName())
+                .rentalTypeSlug(property.getRentalType().getSlug())
 
                 .host(hostInfo)
 

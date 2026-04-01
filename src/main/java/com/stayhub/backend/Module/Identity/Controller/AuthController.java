@@ -84,10 +84,10 @@ public class AuthController {
     public ResponseData<String> submitApplication(
             Principal principal,
             @Valid @RequestBody HostRegistrationWithPropertyRequest request) {
-        hostOnboardingService.submitHostApplication(principal.getName(), request);
+        String hostCode = hostOnboardingService.submitHostApplication(principal.getName(), request);
 
         return new ResponseData<>(201,
-                "Gửi hồ sơ đăng ký thành công! Vui lòng chờ Ban quản trị StayHub phê duyệt.");
+                "Gửi hồ sơ đăng ký thành công! Vui lòng chờ Ban quản trị StayHub phê duyệt.", hostCode);
     }
 
     @PutMapping("/{id}/approval-host")

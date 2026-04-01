@@ -53,6 +53,10 @@ public class Room extends AbstractEntity {
     @Builder.Default
     private List<RoomImage> images = new ArrayList<>();
 
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<RoomAvailability> availabilities = new ArrayList<>();
+
     @ManyToMany
     @JoinTable(
             name = "room_amenities",

@@ -6,6 +6,7 @@ import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,16 @@ public class PropertyController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @Operation(summary = "Chủ nhà ROLE_HOST - API này cho phép chủ nhà tạo mới một danh mục tài sản cho thuê.",
+    description = """
+            Phương thức: POST
+            
+            Đường dẫn: /api/v1/properties
+            
+            Đối tượng yêu cầu: PropertyCreateRequest
+            
+            Chi tiết phản hồi: Trả về chuỗi thông báo tạo tin đăng thành công và chờ duyệt.
+            """)
     public ResponseData<String> createProperty(Principal principal, @Valid @RequestBody PropertyCreateRequest request) {
 
         propertyService.createProperty(principal.getName(), request);

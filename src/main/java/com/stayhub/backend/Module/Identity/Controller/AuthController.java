@@ -6,6 +6,7 @@ import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Module.Identity.Service.HostOnboardingService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,18 @@ public class AuthController {
     private final AuthService authService;
     private final HostOnboardingService hostOnboardingService;
 
+    @Operation(summary = "Tất cả người dùng - API này được sử dụng để đăng ký tài khoản khách hàng mới trên hệ thống.",
+    description = """
+            Phương thức: POST
+            
+            Đường dẫn: /api/v1/auth/register-guest
+            
+            Đối tượng yêu cầu: RegisterGuestRequest
+            
+            Quy tắc xác thực Mật khẩu: Mật khẩu bắt buộc tuân theo biểu thức ^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{8,}$. Cụ thể, mật khẩu phải dài tối thiểu 8 ký tự, bao gồm ít nhất một chữ cái viết hoa, một chữ cái viết thường, một chữ số và một ký tự đặc biệt.
+            
+            Chi tiết phản hồi: Trả về chuỗi thông báo thành công và yêu cầu người dùng kiểm tra thư điện tử để xác thực tài khoản.
+            """)
     @PostMapping("/register-guest")
     public ResponseData<String> registerGuest(@Valid @RequestBody RegisterGuestRequest registerRequest) {
         String message = authService.registerGuest(registerRequest);
@@ -54,6 +67,20 @@ public class AuthController {
 
     @PostMapping("/host-applications")
     @PreAuthorize("hasAuthority('ROLE_USER')")
+    @Operation(summary = "Người dùng có quyền Khách hàng ROLE_USER - API này dùng để nộp hồ sơ nâng cấp thành Chủ nhà kèm theo thông tin của căn nhà đầu tiên.",
+    description = """
+            Phương thức: POST
+            
+            Đường dẫn: /api/v1/auth/host-applications
+            
+            Đối tượng yêu cầu: HostRegistrationWithPropertyRequest
+            
+            Quy tắc xác thực Số điện thoại: Thuộc tính businessPhone tuân theo biểu thức ^(0|84|\\+84)(3[2-9]|5[2689]|7[06-9]|8[1-9]|9[0-9])([0-9]{8})$. Cụ thể, số điện thoại phải bắt đầu bằng 0, 84 hoặc +84, tiếp theo là mã mạng hợp lệ của Việt Nam và kết thúc bằng 8 chữ số.
+            
+            Quy tắc xác thực Căn cước công dân: Thuộc tính identityCardNumber tuân theo biểu thức ^[0-9]{12}$, yêu cầu chính xác 12 chữ số liên tiếp.
+            
+            Chi tiết phản hồi: Trả về chuỗi thông báo gửi hồ sơ thành công và đang chờ ban quản trị phê duyệt.
+            """)
     public ResponseData<String> submitApplication(
             Principal principal,
             @Valid @RequestBody HostRegistrationWithPropertyRequest request) {
@@ -65,6 +92,18 @@ public class AuthController {
 
     @PutMapping("/{id}/approval-host")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Operation(summary = "Quản trị viên ROLE_ADMIN - API này dùng để xét duyệt hồ sơ đăng ký Chủ nhà của người dùng.",
+    description = """
+            Phương thức: PUT
+            
+            Đường dẫn: /api/v1/auth/{id}/approval-host
+            
+            Tham số đường dẫn: id (Định danh người dùng)
+            
+            Đối tượng yêu cầu: HostApprovalRequest
+            
+            Chi tiết phản hồi: Trả về chuỗi thông báo trạng thái phê duyệt tương ứng với kết quả quyết định.
+            """)
     public ResponseEntity<ResponseData<String>> reviewApplication(
             @PathVariable Long id,
             @Valid @RequestBody HostApprovalRequest request) {

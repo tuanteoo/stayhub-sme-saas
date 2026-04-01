@@ -23,21 +23,29 @@ public record PropertyCreateRequest(
         // 2. VỊ TRÍ ĐỊA LÝ
         // ==========================================
         @NotBlank(message = "Tỉnh/Thành phố không được để trống")
+        @Size(max = 100, message = "Tên Tỉnh/Thành phố quá dài")
         String province,
 
         @NotBlank(message = "Quận/Huyện không được để trống")
+        @Size(max = 100, message = "Tên Quận/Huyện quá dài")
         String district,
 
         @NotBlank(message = "Phường/Xã không được để trống")
+        @Size(max = 100, message = "Tên Phường/Xã quá dài")
         String ward,
 
-        @NotBlank(message = "Địa chỉ chi tiết (Số nhà, Tên đường) không được để trống")
+        @NotBlank(message = "Địa chỉ chi tiết không được để trống")
+        @Size(max = 255, message = "Địa chỉ chi tiết không được vượt quá 255 ký tự")
         String addressDetail,
 
         @NotNull(message = "Vĩ độ không được trống")
+        @Min(value = -90, message = "Vĩ độ phải lớn hơn hoặc bằng -90")
+        @Max(value = 90, message = "Vĩ độ phải nhỏ hơn hoặc bằng 90")
         Double latitude,
 
         @NotNull(message = "Kinh độ không được trống")
+        @Min(value = -180, message = "Kinh độ phải lớn hơn hoặc bằng -180")
+        @Max(value = 180, message = "Kinh độ phải nhỏ hơn hoặc bằng 180")
         Double longitude,
 
         // ==========================================
@@ -48,6 +56,7 @@ public record PropertyCreateRequest(
         String name,
 
         @NotBlank(message = "Mô tả chỗ ở không được để trống")
+        @Size(max = 5000, message = "Mô tả không được vượt quá 5000 ký tự")
         String description,
 
         // ==========================================
@@ -65,7 +74,7 @@ public record PropertyCreateRequest(
         // ==========================================
 
         @NotNull(message = "Danh sách ảnh không được để trống")
-        @Size(min = 5, message = "Vui lòng tải lên tối thiểu 5 hình ảnh (Mặt tiền, phòng ngủ, phòng tắm...) để đảm bảo chất lượng tin đăng")
+        @Size(min = 5, message = "Vui lòng tải lên tối thiểu 5 hình ảnh để đảm bảo chất lượng tin đăng")
         List<String> imageUrls,
 
         @NotEmpty(message = "Chỗ ở phải có ít nhất 1 phòng")

@@ -65,24 +65,25 @@ public class PaymentServiceImpl implements PaymentService {
         long amount = amountToPay.multiply(BigDecimal.valueOf(100)).longValue();
 
         Map<String, String> vnp_Params = new HashMap<>();
-        vnp_Params.put("vnp_Version", vnp_Version);
-        vnp_Params.put("vnp_Command", vnp_Command);
-        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+        vnp_Params.put("vnp_Version", vnp_Version.trim());
+        vnp_Params.put("vnp_Command", vnp_Command.trim());
+        vnp_Params.put("vnp_TmnCode", vnp_TmnCode.trim());
         vnp_Params.put("vnp_Amount", String.valueOf(amount));
         vnp_Params.put("vnp_CurrCode", "VND");
 
         // Mã giao dịch ghép từ BookingCode và Ramdom để tránh trùng lặp nếu thanh toán lại
         String vnp_TxnRef = bookingCode + "_" + VNPayConfig.getRandomNumber(6);
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-        vnp_Params.put("vnp_OrderInfo", "Thanh_toan_don_hang_" + bookingCode); // Không dùng dấu cách
-        vnp_Params.put("vnp_OrderType", "170000"); // Mã ngành Khách sạn/Du lịch chuẩn của VNPAY
+        vnp_Params.put("vnp_OrderInfo", "Thanh_toan_don_hang_" + bookingCode);
+        vnp_Params.put("vnp_OrderType", "170000");
         vnp_Params.put("vnp_Locale", "vn");
-        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
+        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl.trim());
 
-        // Chặn lỗi địa chỉ IPv6 localhost (::1) gây lỗi VNPAY
         String ipAddr = VNPayConfig.getIpAddress(request);
         if (ipAddr == null || ipAddr.isEmpty() || ipAddr.contains(":")) {
             ipAddr = "127.0.0.1";
+        } else if (ipAddr.contains(",")) {
+            ipAddr = ipAddr.split(",")[0].trim();
         }
         vnp_Params.put("vnp_IpAddr", ipAddr);
 

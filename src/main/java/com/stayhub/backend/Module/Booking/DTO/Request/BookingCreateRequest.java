@@ -30,7 +30,7 @@ public record BookingCreateRequest(
         @NotNull(message = "Vui lòng chọn hình thức thanh toán")
         BookingPaymentOption paymentOption,
 
-        String promotionCode,
+//        String promotionCode,
         String note
 ) {
 }

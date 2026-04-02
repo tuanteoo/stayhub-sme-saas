@@ -4,7 +4,6 @@ import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
-import com.stayhub.backend.Common.Util.PricingUtils;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Model.BookingRoom;
@@ -64,17 +63,6 @@ public class BookingServiceImpl implements BookingService {
 
         List<Long> requestedRoomIds = request.roomIds();
 
-        List<Room> rooms = roomRepository.findAllById(requestedRoomIds);
-        if (rooms.size() != requestedRoomIds.size()) {
-            throw new ResourceNotFoundException("Một hoặc nhiều phòng được chọn không tồn tại trong hệ thống!");
-        }
-
-        boolean allRoomsBelongToProperty = rooms.stream()
-                .allMatch(room -> room.getProperty().getId().equals(property.getId()));
-        if (!allRoomsBelongToProperty) {
-            throw new InvalidDataException("Dữ liệu không hợp lệ: Các phòng được chọn không thuộc về chỗ ở này!");
-        }
-
         String rentalTypeSlug = property.getRentalType().getSlug();
         if ("toan-bo-nha".equals(rentalTypeSlug)) {
             long totalActiveRooms = property.getRooms().stream().filter(Room::getIsActive).count();
@@ -104,6 +92,7 @@ public class BookingServiceImpl implements BookingService {
         // =========================================================================================
         // BƯỚC 3: KIỂM TRA TỔNG SỨC CHỨA VÀ TÍNH TOÁN TIỀN PHÒNG
         // =========================================================================================
+        List<Room> rooms = roomRepository.findAllById(requestedRoomIds);
 
         // KIỂM TRA SỨC CHỨA
         int totalCapacity = rooms.stream().mapToInt(Room::getMaxGuests).sum();
@@ -114,33 +103,40 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal totalRoomPrice = BigDecimal.ZERO;
         List<BookingRoom> bookingRooms = new ArrayList<>();
 
+        // Phân tích số đêm cuối tuần (Thứ 6, Thứ 7) và số đêm thường
+        long weekendNights = 0;
+        long weekdayNights = 0;
+        for (LocalDate date = request.checkInDate(); date.isBefore(request.checkOutDate()); date = date.plusDays(1)) {
+            if (date.getDayOfWeek() == DayOfWeek.FRIDAY || date.getDayOfWeek() == DayOfWeek.SATURDAY) {
+                weekendNights++;
+            } else {
+                weekdayNights++;
+            }
+        }
+
+        // Lấy % phụ thu cuối tuần
         int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
         BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-        Map<Long, List<RoomAvailability>> availabilityByRoomId = availabilities.stream()
-                .collect(Collectors.groupingBy(a -> a.getRoom().getId()));
-
+        // Tính tiền (Chỉ dựa vào giá phòng và số đêm, KHÔNG NHÂN VỚI SỐ NGƯỜI)
         for (Room room : rooms) {
-            BigDecimal roomTotalPrice = BigDecimal.ZERO;
+            BigDecimal basePrice = room.getPricePerNight();
+            BigDecimal weekendPrice = basePrice.multiply(surchargeMultiplier);
 
-            List<RoomAvailability> roomAvailabilities = availabilityByRoomId.getOrDefault(room.getId(), new ArrayList<>());
-            for (RoomAvailability availability : roomAvailabilities) {
-                BigDecimal dailyPrice = PricingUtils.calculateDailyPrice(room, availability, surchargeMultiplier);
+            BigDecimal roomTotalForWeekday = basePrice.multiply(BigDecimal.valueOf(weekdayNights));
+            BigDecimal roomTotalForWeekend = weekendPrice.multiply(BigDecimal.valueOf(weekendNights));
 
-                roomTotalPrice = roomTotalPrice.add(dailyPrice);
-            }
-
-            totalRoomPrice = totalRoomPrice.add(roomTotalPrice);
+            totalRoomPrice = totalRoomPrice.add(roomTotalForWeekday).add(roomTotalForWeekend);
 
             bookingRooms.add(BookingRoom.builder()
                     .room(room)
-                    .numGuests(room.getMaxGuests())
-                    .priceAtBooking(roomTotalPrice)
+                    .numGuests(1) // Mặc định là 1 (vì FE không còn gửi số lượng chi tiết từng phòng)
+                    .priceAtBooking(basePrice) // Vẫn lưu giá gốc để làm lịch sử
                     .build());
         }
 
         BigDecimal cleaningFee = property.getCleaningFee() != null ? property.getCleaningFee() : BigDecimal.ZERO;
-        BigDecimal discountAmount = BigDecimal.ZERO;
+        BigDecimal discountAmount = BigDecimal.ZERO; // (Sẽ được xử lý bởi Module Promotion sau này)
 
         // TỔNG TIỀN KHÁCH PHẢI TRẢ (Tiền phòng + Dọn dẹp - Giảm giá)
         BigDecimal finalAmount = totalRoomPrice.add(cleaningFee).subtract(discountAmount);

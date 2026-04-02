@@ -130,13 +130,13 @@ public class BookingServiceImpl implements BookingService {
 
             bookingRooms.add(BookingRoom.builder()
                     .room(room)
-                    .numGuests(1) // Mặc định là 1 (vì FE không còn gửi số lượng chi tiết từng phòng)
-                    .priceAtBooking(basePrice) // Vẫn lưu giá gốc để làm lịch sử
+                    .numGuests(1)
+                    .priceAtBooking(basePrice)
                     .build());
         }
 
         BigDecimal cleaningFee = property.getCleaningFee() != null ? property.getCleaningFee() : BigDecimal.ZERO;
-        BigDecimal discountAmount = BigDecimal.ZERO; // (Sẽ được xử lý bởi Module Promotion sau này)
+        BigDecimal discountAmount = BigDecimal.ZERO;
 
         // TỔNG TIỀN KHÁCH PHẢI TRẢ (Tiền phòng + Dọn dẹp - Giảm giá)
         BigDecimal finalAmount = totalRoomPrice.add(cleaningFee).subtract(discountAmount);

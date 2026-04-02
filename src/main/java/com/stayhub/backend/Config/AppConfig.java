@@ -49,6 +49,7 @@ public class AppConfig {
                                 "/auth/login","/auth/register-guest","/auth/verify-email",
                                 "/auth/refresh-token",
                                 "/public/**",
+                                "/payments/vnpay/ipn",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"

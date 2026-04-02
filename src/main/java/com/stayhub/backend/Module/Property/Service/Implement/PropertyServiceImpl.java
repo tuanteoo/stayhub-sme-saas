@@ -50,8 +50,8 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createProperty(String hostEmail, PropertyCreateRequest request) {
-        User currentUser = userRepository.findByEmail(hostEmail)
+    public void createProperty(String email, PropertyCreateRequest request) {
+        User currentUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng!"));
 
         HostDetail hostDetail = hostDetailRepository.findById(currentUser.getId())
@@ -67,6 +67,12 @@ public class PropertyServiceImpl implements PropertyService {
 
         RentalType rentalType = rentalTypeRepository.findById(request.rentalTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại hình cho thuê!"));
+
+        if ("toan-bo-nha".equals(rentalType.getSlug())) {
+            if (request.rooms() == null || request.rooms().size() != 1) {
+                throw new InvalidDataException("Loại hình 'Toàn bộ chỗ ở' chỉ được phép khai báo 1 phòng duy nhất (đại diện cho toàn bộ căn nhà)!");
+            }
+        }
 
         Property property = Property.builder()
                 .host(currentUser)
@@ -131,8 +137,6 @@ public class PropertyServiceImpl implements PropertyService {
                 : Collections.emptySet();
 
         if (request.rooms() != null) {
-
-
             List<Room> rooms = request.rooms().stream().map(roomReq -> {
 
                 Room room = Room.builder()

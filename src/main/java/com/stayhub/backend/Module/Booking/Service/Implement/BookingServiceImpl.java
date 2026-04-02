@@ -5,7 +5,6 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
-import com.stayhub.backend.Module.Booking.DTO.Request.RoomBookingRequest;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Model.BookingRoom;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
@@ -161,11 +160,11 @@ public class BookingServiceImpl implements BookingService {
         // BƯỚC 5: LƯU ĐƠN ĐẶT PHÒNG VÀO DATABASE
         // =========================================================================================
         // Sinh mã đơn (Ví dụ: BKG-8A9B2C)
-        String bookingCode = "BKG-" + UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        String bookingCode = "SHB-" + UUID.randomUUID().toString().substring(0,8).toUpperCase();
 
         BookingStatus initialStatus = (depositAmount.compareTo(BigDecimal.ZERO) == 0)
                 ? BookingStatus.CONFIRMED
-                : BookingStatus.PENDING;
+                : BookingStatus.AWAITING_PAYMENT;
 
         Booking booking = Booking.builder()
                 .bookingCode(bookingCode)

@@ -2,6 +2,7 @@ package com.stayhub.backend.Module.Property.Controller;
 
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
+import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -22,7 +24,6 @@ import java.time.LocalDate;
 public class PropertyController {
     private final PropertyService propertyService;
 
-    @PostMapping
     @PreAuthorize("hasAuthority('ROLE_HOST')")
     @Operation(summary = "Chủ nhà ROLE_HOST - API này cho phép chủ nhà tạo mới một danh mục tài sản cho thuê.",
     description = """
@@ -34,9 +35,10 @@ public class PropertyController {
             
             Chi tiết phản hồi: Trả về chuỗi thông báo tạo tin đăng thành công và chờ duyệt.
             """)
-    public ResponseData<String> createProperty(Principal principal, @Valid @RequestBody PropertyCreateRequest request) {
+    @PostMapping
+    public ResponseData<String> createProperty(@AuthenticationPrincipal CustomUserDetails customUserDetails, @Valid @RequestBody PropertyCreateRequest request) {
 
-        propertyService.createProperty(principal.getName(), request);
+        propertyService.createProperty(customUserDetails.getUser().getEmail(), request);
 
         return new ResponseData<>(
                 201,

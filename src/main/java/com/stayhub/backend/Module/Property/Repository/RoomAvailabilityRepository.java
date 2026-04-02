@@ -1,5 +1,6 @@
 package com.stayhub.backend.Module.Property.Repository;
 
+import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Property.Model.RoomAvailability;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,9 @@ public interface RoomAvailabilityRepository extends JpaRepository<RoomAvailabili
             @Param("checkInDate") LocalDate checkInDate,
             @Param("checkOutDate") LocalDate checkOutDate
     );
+
+    // Thêm vào RoomAvailabilityRepository.java
+    @Modifying
+    @Query("UPDATE RoomAvailability r SET r.isAvailable = true, r.booking = null WHERE r.booking = :booking")
+    void releaseRoomsByBooking(@Param("booking") Booking booking);
 }

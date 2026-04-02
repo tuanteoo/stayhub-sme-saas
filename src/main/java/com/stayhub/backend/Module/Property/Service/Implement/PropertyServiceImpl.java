@@ -5,18 +5,14 @@ import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
-import com.stayhub.backend.Module.Property.DTO.Response.CancellationPolicyResponse;
+import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
 import com.stayhub.backend.Module.Property.DTO.Request.RoomCreateRequest;
-import com.stayhub.backend.Module.Property.DTO.Response.AmenityResponse;
-import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
-import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
-import com.stayhub.backend.Module.Property.DTO.Response.RoomResponse;
 import com.stayhub.backend.Module.Property.Mapper.AmenityMapper;
 import com.stayhub.backend.Module.Property.Mapper.RoomMapper;
 import com.stayhub.backend.Module.Property.Model.*;
@@ -186,6 +182,50 @@ public class PropertyServiceImpl implements PropertyService {
         }
 
         propertyRepository.save(property);
+    }
+
+    @Override
+    public PageResponse<HostPropertyResponse> getPropertiesByHost(Long id, int page, int size, String sortBy, String sortDir) {
+        User host = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
+        Page<Property> propertyPage = propertyRepository.findByHostId(host.getId(), pageable);
+        List<HostPropertyResponse> responses = propertyPage.stream().map(property -> {
+            // Lấy ảnh Thumbnail
+            String thumbnailUrl = property.getImages().stream()
+                    .filter(PropertyImage::getIsThumbnail)
+                    .map(PropertyImage::getUrl)
+                    .findFirst()
+                    .orElse(null);
+
+            BigDecimal startingPrice = property.getRooms().stream()
+                    .map(Room::getPricePerNight)
+                    .filter(Objects::nonNull)
+                    .min(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+
+            return new HostPropertyResponse(
+                    property.getId(),
+                    property.getName(),
+                    property.getSlug(),
+                    property.getAddressDetail(),
+                    property.getProvince(),
+                    startingPrice,
+                    thumbnailUrl,
+                    property.getStatus(),
+                    property.getRatingAvg(),
+                    property.getReviewCount(),
+                    property.getCreatedAt()
+            );
+        }).toList();
+        return PageResponse.<HostPropertyResponse>builder()
+                .pageNo(page)
+                .pageSize(size)
+                .totalPage(propertyPage.getTotalPages())
+                .totalElements(propertyPage.getTotalElements())
+                .items(responses)
+                .build();
     }
 
     @Override

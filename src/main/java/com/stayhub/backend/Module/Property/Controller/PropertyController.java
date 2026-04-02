@@ -3,13 +3,16 @@ package com.stayhub.backend.Module.Property.Controller;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
+import com.stayhub.backend.Module.Property.DTO.Response.HostPropertyResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +24,7 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/properties")
 @RequiredArgsConstructor
+@Tag(name = "Property", description = "API Bài đăng về tài sản cho thuê")
 public class PropertyController {
     private final PropertyService propertyService;
 
@@ -46,6 +50,23 @@ public class PropertyController {
         );
     }
 
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @Operation(summary = "ROLE_HOST - Lấy danh sách bài đăng")
+    @GetMapping("/host")
+    public ResponseEntity<ResponseData<PageResponse<HostPropertyResponse>>> getPropertiesByHost(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        PageResponse<HostPropertyResponse> response = propertyService.getPropertiesByHost(
+                customUserDetails.getUser().getId(), page, size, sortBy, sortDir);
+
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách bài đăng của Host thành công", response));
+    }
+
+    @Operation(summary = "Tất cả người dùng - API này tìm kiếm và lấy danh sách các tài sản cho thuê dựa trên các tiêu chí lọc như điểm đến, số lượng khách, ngày nhận phòng và ngày trả phòng.")
     @GetMapping
     public ResponseEntity<ResponseData<PageResponse<PropertyCardResponse>>> getProperties(
             @RequestParam(defaultValue = "1") int page,
@@ -62,6 +83,7 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", properties));
     }
 
+    @Operation(summary = "Tất cả người dùng - API này xem chi tiết một tài sản cho thuê dựa trên slug duy nhất của nó.")
     @GetMapping("/{slug}")
     public ResponseEntity<ResponseData<PropertyDetailResponse>> getPropertyDetail(@PathVariable String slug) {
 

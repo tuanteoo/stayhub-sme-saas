@@ -14,8 +14,8 @@ import java.util.Optional;
 
 public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpecificationExecutor<Property> {
     Page<Property> findByStatus(PropertyStatus status, Pageable pageable);
+    Page<Property> findByHostId(Long hostId, Pageable pageable);
     Optional<Property> findBySlugAndStatus(String slug, PropertyStatus status);
-
     Optional<Property> findFirstByHostIdAndStatusOrderByCreatedAtAsc(Long id, PropertyStatus status);
 
     @Query("""

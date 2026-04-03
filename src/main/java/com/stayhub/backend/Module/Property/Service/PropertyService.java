@@ -5,13 +5,16 @@ import com.stayhub.backend.Module.Property.DTO.Response.HostPropertyResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
+import com.stayhub.backend.Module.Property.DTO.Response.RoomPriceResponse;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface PropertyService {
     void createProperty(String email, PropertyCreateRequest request);
     PageResponse<HostPropertyResponse> getPropertiesByHost(Long id, int page, int size, String sortBy, String sortDir);
     PageResponse<PropertyCardResponse> getPropertiesForGuest(int page, int size, String sortBy, String sortDir, String destination, Integer guestCount, LocalDate checkInDate, LocalDate checkOutDate);
-    PropertyDetailResponse getPropertyBySlug(String slug);
+    PropertyDetailResponse getPropertyBySlug(String slug, LocalDate checkInDate, LocalDate checkOutDate);
+    List<RoomPriceResponse> calculatePriceForProperty(String slug, LocalDate checkInDate, LocalDate checkOutDate);
     void approveFirstPendingPropertyByHost(Long id);
 }

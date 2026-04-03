@@ -298,7 +298,7 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PropertyDetailResponse getPropertyBySlug(String slug) {
+    public PropertyDetailResponse getPropertyBySlug(String slug, LocalDate checkInDate, LocalDate checkOutDate) {
         Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở này hoặc bài đăng chưa được duyệt!"));
 
@@ -342,8 +342,40 @@ public class PropertyServiceImpl implements PropertyService {
         int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
         int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
 
-        List<RoomResponse> roomResponses = property.getRooms().stream().
-                map(roomMapper::toResponse).toList();
+        // Lấy hệ số phụ thu cuối tuần của Property
+        int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
+        BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+
+        List<RoomResponse> roomResponses = property.getRooms().stream().map(room -> {
+            RoomResponse baseResponse = roomMapper.toResponse(room);
+
+            BigDecimal calculatedTotalPrice = null;
+            List<DailyPriceDTO> priceBreakdown = new ArrayList<>();
+
+            if (checkInDate != null && checkOutDate != null) {
+                calculatedTotalPrice = BigDecimal.ZERO;
+
+                List<RoomAvailability> availabilities = room.getAvailabilities().stream()
+                        .filter(a -> !a.getDate().isBefore(checkInDate) && a.getDate().isBefore(checkOutDate))
+                        .toList();
+
+                for (RoomAvailability availability : availabilities) {
+                    BigDecimal dailyPrice = PricingUtils.calculateDailyPrice(room,availability, surchargeMultiplier);
+
+                    priceBreakdown.add(new DailyPriceDTO(availability.getDate(), dailyPrice));
+                    calculatedTotalPrice = calculatedTotalPrice.add(dailyPrice);
+                }
+            }
+
+            return new RoomResponse(
+                    baseResponse.id(), baseResponse.name(), baseResponse.description(),
+                    baseResponse.pricePerNight(), baseResponse.maxGuests(), baseResponse.numBeds(),
+                    baseResponse.numBathrooms(), baseResponse.amenities(), baseResponse.thumbnailUrl(),
+                    baseResponse.cancellationPolicyResponse(), baseResponse.blockedDates(),
+                    calculatedTotalPrice,
+                    priceBreakdown
+            );
+        }).toList();
 
         return PropertyDetailResponse.builder()
                 .id(property.getId())
@@ -390,6 +422,33 @@ public class PropertyServiceImpl implements PropertyService {
                 .imageUrls(allImageUrls)
                 .rooms(roomResponses)
                 .build();
+    }
+
+    @Override
+    public List<RoomPriceResponse> calculatePriceForProperty(String slug, LocalDate checkInDate, LocalDate checkOutDate) {
+        Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở"));
+
+        int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
+        BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+
+        return property.getRooms().stream().map(room -> {
+            BigDecimal calculatedTotalPrice = BigDecimal.ZERO;
+            List<DailyPriceDTO> priceBreakdown = new ArrayList<>();
+
+            List<RoomAvailability> availabilities = room.getAvailabilities().stream()
+                    .filter(a -> !a.getDate().isBefore(checkInDate) && a.getDate().isBefore(checkOutDate))
+                    .toList();
+
+            for (RoomAvailability availability : availabilities) {
+                BigDecimal dailyPrice = PricingUtils.calculateDailyPrice(room,availability, surchargeMultiplier);
+
+                priceBreakdown.add(new DailyPriceDTO(availability.getDate(), dailyPrice));
+                calculatedTotalPrice = calculatedTotalPrice.add(dailyPrice);
+            }
+
+            return new RoomPriceResponse(room.getId(), calculatedTotalPrice, priceBreakdown);
+        }).toList();
     }
 
     @Override

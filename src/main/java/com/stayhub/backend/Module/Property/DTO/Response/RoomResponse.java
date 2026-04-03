@@ -15,6 +15,8 @@ public record RoomResponse(
         List<AmenityResponse> amenities,
         String thumbnailUrl,
         CancellationPolicyResponse cancellationPolicyResponse,
-        List<LocalDate> blockedDates
+        List<LocalDate> blockedDates,
+        BigDecimal calculatedTotalPrice,
+        List<DailyPriceDTO> priceBreakdown
 ) {
 }

@@ -7,11 +7,13 @@ import com.stayhub.backend.Module.Property.DTO.Response.HostPropertyResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
+import com.stayhub.backend.Module.Property.DTO.Response.RoomPriceResponse;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/properties")
@@ -85,10 +88,24 @@ public class PropertyController {
 
     @Operation(summary = "Tất cả người dùng - API này xem chi tiết một tài sản cho thuê dựa trên slug duy nhất của nó.")
     @GetMapping("/{slug}")
-    public ResponseEntity<ResponseData<PropertyDetailResponse>> getPropertyDetail(@PathVariable String slug) {
+    public ResponseEntity<ResponseData<PropertyDetailResponse>> getPropertyDetail(
+            @PathVariable String slug,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkInDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate) {
 
-        PropertyDetailResponse propertyDetail = propertyService.getPropertyBySlug(slug);
+        PropertyDetailResponse propertyDetail = propertyService.getPropertyBySlug(slug, checkInDate, checkOutDate);
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy thông tin chi tiết thành công", propertyDetail));
+    }
+
+    @Operation(summary = "Tất cả người dùng - Tính toán giá tiền cho một tài sản cho thuê dựa trên slug duy nhất của nó và khoảng thời gian lưu trú.")
+    @GetMapping("/{slug}/calculate-price")
+    public ResponseEntity<ResponseData<List<RoomPriceResponse>>> calculatePriceBySlug(
+            @PathVariable String slug,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkInDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate) {
+
+        List<RoomPriceResponse> response = propertyService.calculatePriceForProperty(slug, checkInDate, checkOutDate);
+        return ResponseEntity.ok(new ResponseData<>(200, "Tính giá thành công", response));
     }
 }

@@ -64,6 +64,17 @@ public class BookingServiceImpl implements BookingService {
 
         List<Long> requestedRoomIds = request.roomIds();
 
+        List<Room> rooms = roomRepository.findAllById(requestedRoomIds);
+        if (rooms.size() != requestedRoomIds.size()) {
+            throw new ResourceNotFoundException("Một hoặc nhiều phòng được chọn không tồn tại trong hệ thống!");
+        }
+
+        boolean allRoomsBelongToProperty = rooms.stream()
+                .allMatch(room -> room.getProperty().getId().equals(property.getId()));
+        if (!allRoomsBelongToProperty) {
+            throw new InvalidDataException("Dữ liệu không hợp lệ: Các phòng được chọn không thuộc về chỗ ở này!");
+        }
+
         String rentalTypeSlug = property.getRentalType().getSlug();
         if ("toan-bo-nha".equals(rentalTypeSlug)) {
             long totalActiveRooms = property.getRooms().stream().filter(Room::getIsActive).count();
@@ -93,7 +104,6 @@ public class BookingServiceImpl implements BookingService {
         // =========================================================================================
         // BƯỚC 3: KIỂM TRA TỔNG SỨC CHỨA VÀ TÍNH TOÁN TIỀN PHÒNG
         // =========================================================================================
-        List<Room> rooms = roomRepository.findAllById(requestedRoomIds);
 
         // KIỂM TRA SỨC CHỨA
         int totalCapacity = rooms.stream().mapToInt(Room::getMaxGuests).sum();

@@ -24,6 +24,7 @@ public record PropertyDetailResponse(
         Double latitude,
         Double longitude,
 
+        Integer roomCount,
         Integer maxGuests,
         Integer numBedrooms,
         Integer numBeds,

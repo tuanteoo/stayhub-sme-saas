@@ -1,6 +1,7 @@
 package com.stayhub.backend.Module.Property.Model;
 
 import com.stayhub.backend.Common.Util.PropertyStatus;
+import com.stayhub.backend.Common.Util.StringUtil;
 import com.stayhub.backend.Module.Identity.Model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -91,6 +92,10 @@ public class Property {
     @Builder.Default
     private Set<Amenity> amenities = new HashSet<>();
 
+    @Builder.Default
+    @Column(name = "room_count")
+    private Integer roomCount = 1;
+
     @Column(name = "latitude")
     private Double latitude;
 
@@ -175,8 +180,6 @@ public class Property {
                 this.district != null ? this.district : "",
                 this.ward != null ? this.ward : ""
         );
-
-        // Gọi Util để lột dấu và khoảng trắng, sau đó lưu vào cột searchText
-        this.searchText = com.stayhub.backend.Common.Util.StringUtil.normalizeForSearch(rawData);
+        this.searchText = StringUtil.normalizeForSearch(rawData);
     }
 }

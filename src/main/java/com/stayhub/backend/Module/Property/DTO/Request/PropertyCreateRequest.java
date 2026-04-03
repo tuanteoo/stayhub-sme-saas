@@ -69,6 +69,8 @@ public record PropertyCreateRequest(
         @DecimalMin(value = "0.0", message = "Phí dọn dẹp không được âm")
         BigDecimal cleaningFee,
 
+        Integer roomCount,
+
         // ==========================================
         // 6. CHÍNH SÁCH, TIỆN ÍCH & HÌNH ẢNH
         // ==========================================

@@ -2,6 +2,7 @@ package com.stayhub.backend.Module.Property.Repository;
 
 import com.stayhub.backend.Common.Util.PropertyStatus;
 import com.stayhub.backend.Common.Util.StringUtil;
+import com.stayhub.backend.Module.Property.Model.Category;
 import com.stayhub.backend.Module.Property.Model.Property;
 import com.stayhub.backend.Module.Property.Model.Room;
 import com.stayhub.backend.Module.Property.Model.RoomAvailability;
@@ -20,7 +21,8 @@ public class PropertySpecification {
             String destination,
             Integer guestCount,
             LocalDate checkInDate,
-            LocalDate checkOutDate) {
+            LocalDate checkOutDate,
+            String categorySlug) {
 
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -55,6 +57,12 @@ public class PropertySpecification {
 
                 predicates.add(criteriaBuilder.not(criteriaBuilder.exists(availabilitySubquery)));
             }
+
+            if (categorySlug != null && !categorySlug.trim().isEmpty()) {
+                Join<Property, Category> categoryJoin = root.join("category");
+                predicates.add(criteriaBuilder.equal(categoryJoin.get("slug"), categorySlug));
+            }
+
 
             if (query != null) {
                 query.distinct(true);

@@ -3,11 +3,9 @@ package com.stayhub.backend.Module.Property.Controller;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
-import com.stayhub.backend.Module.Property.DTO.Response.HostPropertyResponse;
-import com.stayhub.backend.Module.Property.DTO.Response.PropertyDetailResponse;
+import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
-import com.stayhub.backend.Module.Property.DTO.Response.PropertyCardResponse;
-import com.stayhub.backend.Module.Property.DTO.Response.RoomPriceResponse;
+import com.stayhub.backend.Module.Property.Service.CategoryService;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +28,7 @@ import java.util.List;
 @Tag(name = "Property", description = "API Bài đăng về tài sản cho thuê")
 public class PropertyController {
     private final PropertyService propertyService;
+    private final CategoryService categoryService;
 
     @PreAuthorize("hasAuthority('ROLE_HOST')")
     @Operation(summary = "Chủ nhà ROLE_HOST - API này cho phép chủ nhà tạo mới một danh mục tài sản cho thuê.",
@@ -69,6 +68,15 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách bài đăng của Host thành công", response));
     }
 
+    @Operation(summary = "Tất cả người dùng - API này lấy danh sách các tài sản cho thuê hàng đầu dựa trên slug của danh mục.")
+    @GetMapping("/category/{slug}/top")
+    public ResponseEntity<ResponseData<List<PropertyCardResponse>>> getTopPropertiesByCategorySlug(
+            @PathVariable("slug") String categorySlug) {
+
+        List<PropertyCardResponse> response = propertyService.getTopPropertiesByCategorySlug(categorySlug);
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách bài đăng theo category thành công", response));
+    }
+
     @Operation(summary = "Tất cả người dùng - API này tìm kiếm và lấy danh sách các tài sản cho thuê dựa trên các tiêu chí lọc như điểm đến, số lượng khách, ngày nhận phòng và ngày trả phòng.")
     @GetMapping
     public ResponseEntity<ResponseData<PageResponse<PropertyCardResponse>>> getProperties(
@@ -79,9 +87,10 @@ public class PropertyController {
             @RequestParam(required = false) String destination,
             @RequestParam(required = false) Integer guestCount,
             @RequestParam(required = false) LocalDate checkInDate,
-            @RequestParam(required = false) LocalDate checkOutDate){
+            @RequestParam(required = false) LocalDate checkOutDate,
+            @RequestParam(required = false) String categorySlug) {
 
-        PageResponse<PropertyCardResponse> properties = propertyService.getPropertiesForGuest(page, size, sortBy, sortDir,destination,guestCount,checkInDate,checkOutDate);
+        PageResponse<PropertyCardResponse> properties = propertyService.getPropertiesForGuest(page, size, sortBy, sortDir,destination,guestCount,checkInDate,checkOutDate, categorySlug);
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", properties));
     }
@@ -108,4 +117,11 @@ public class PropertyController {
         List<RoomPriceResponse> response = propertyService.calculatePriceForProperty(slug, checkInDate, checkOutDate);
         return ResponseEntity.ok(new ResponseData<>(200, "Tính giá thành công", response));
     }
+
+    @Operation(summary = "Tất cả người dùng - API này lấy danh sách tất cả các danh mục tài sản cho thuê có sẵn.")
+    @GetMapping("/categories")
+    public ResponseEntity<ResponseData<List<CategoryResponse>>> getAllCategories() {
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh mục thành công", categoryService.getAllCategories()));
+    }
+
 }

@@ -18,7 +18,9 @@ import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -237,53 +239,12 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PageResponse<PropertyCardResponse> getPropertiesForGuest(int page, int size, String sortBy, String sortDir, String destination, Integer guestCount, LocalDate checkInDate, LocalDate checkOutDate) {
+    public PageResponse<PropertyCardResponse> getPropertiesForGuest(int page, int size, String sortBy, String sortDir, String destination, Integer guestCount, LocalDate checkInDate, LocalDate checkOutDate, String categorySlug) {
         Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
-        Specification<Property> spec = PropertySpecification.buildSearchFilter(destination, guestCount, checkInDate, checkOutDate);
+        Specification<Property> spec = PropertySpecification.buildSearchFilter(destination, guestCount, checkInDate, checkOutDate, categorySlug);
         Page<Property> propertyPage = propertyRepository.findAll(spec, pageable);
 
-        List<PropertyCardResponse> cardResponses = propertyPage.stream().map(property -> {
-            String thumbnailUrl = property.getImages().stream()
-                    .filter(PropertyImage::getIsThumbnail)
-                    .map(PropertyImage::getUrl)
-                    .findFirst()
-                    .orElse(null);
-
-            Set<String> allAmenityNames = Stream.concat(
-                            property.getAmenities().stream(),
-                            property.getRooms().stream().flatMap(room -> room.getAmenities().stream())
-                    )
-                    .map(Amenity::getName)
-                    .collect(Collectors.toSet());
-
-            BigDecimal startingPrice = property.getRooms().stream()
-                    .map(Room::getPricePerNight)
-                    .filter(Objects::nonNull)
-                    .min(BigDecimal::compareTo)
-                    .orElse(BigDecimal.ZERO);
-
-            int totalGuests = property.getRooms().stream().mapToInt(Room::getMaxGuests).sum();
-            int totalRooms = property.getRooms().size();
-            int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
-            int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
-
-            return new PropertyCardResponse(
-                    property.getId(),
-                    property.getName(),
-                    property.getSlug(),
-                    property.getProvince(),
-                    property.getDistrict(),
-                    startingPrice,
-                    thumbnailUrl,
-                    property.getRatingAvg(),
-                    property.getRoomCount(),
-                    totalGuests,
-                    totalRooms,
-                    totalBeds,
-                    totalBathrooms,
-                    new ArrayList<>(allAmenityNames)
-            );
-        }).toList();
+        List<PropertyCardResponse> cardResponses = propertyPage.stream().map(this::mapToPropertyCardResponse).toList();
 
         return PageResponse.<PropertyCardResponse>builder()
                 .pageNo(page)
@@ -461,5 +422,59 @@ public class PropertyServiceImpl implements PropertyService {
             property.setStatus(PropertyStatus.PUBLISHED);
             propertyRepository.save(property);
         }
+    }
+
+    @Override
+    public List<PropertyCardResponse> getTopPropertiesByCategorySlug(String categorySlug) {
+        Pageable top8Pageable = PageRequest.of(
+                0, 8, Sort.by(
+                        Sort.Order.desc("ratingAvg"),
+                        Sort.Order.desc("reviewCount")
+                )
+        );
+
+        Page<Property> propertyPage = propertyRepository.findByCategory_SlugAndStatus(
+                categorySlug, PropertyStatus.PUBLISHED, top8Pageable
+        );
+
+        // 3. Map sang Response
+        return propertyPage.stream()
+                .map(this::mapToPropertyCardResponse)
+                .toList();
+    }
+
+
+    private PropertyCardResponse mapToPropertyCardResponse(Property property) {
+        String thumbnailUrl = property.getImages().stream()
+                .filter(PropertyImage::getIsThumbnail)
+                .map(PropertyImage::getUrl)
+                .findFirst()
+                .orElse(null);
+
+        Set<String> allAmenityNames = Stream.concat(
+                        property.getAmenities().stream(),
+                        property.getRooms().stream().flatMap(room -> room.getAmenities().stream())
+                )
+                .map(Amenity::getName)
+                .collect(Collectors.toSet());
+
+        BigDecimal startingPrice = property.getRooms().stream()
+                .map(Room::getPricePerNight)
+                .filter(Objects::nonNull)
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        int totalGuests = property.getRooms().stream().mapToInt(Room::getMaxGuests).sum();
+        int totalRooms = property.getRooms().size();
+        int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
+        int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
+
+        return new PropertyCardResponse(
+                property.getId(), property.getName(), property.getSlug(),
+                property.getProvince(), property.getDistrict(), startingPrice,
+                thumbnailUrl, property.getRatingAvg(), property.getRoomCount(),
+                totalGuests, totalRooms, totalBeds, totalBathrooms,
+                new ArrayList<>(allAmenityNames)
+        );
     }
 }

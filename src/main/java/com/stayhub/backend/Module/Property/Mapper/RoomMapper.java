@@ -50,7 +50,9 @@ public class RoomMapper {
                 roomAmenities,
                 thumbnailUrl,
                 policyResponse,
-                blockedDates
+                blockedDates,
+                null,
+                null
         );
     }
 }

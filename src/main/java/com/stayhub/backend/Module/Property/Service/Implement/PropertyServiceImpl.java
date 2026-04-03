@@ -7,13 +7,11 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
-import com.stayhub.backend.Module.Property.DTO.Request.RoomCreateRequest;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
-import com.stayhub.backend.Module.Property.Mapper.AmenityMapper;
 import com.stayhub.backend.Module.Property.Mapper.RoomMapper;
 import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.*;
@@ -40,7 +38,6 @@ public class PropertyServiceImpl implements PropertyService {
     private final PropertyRepository propertyRepository;
     private final CategoryRepository categoryRepository;
     private final RentalTypeRepository rentalTypeRepository;
-    private final CancellationPolicyRepository cancellationPolicyRepository;
     private final AmenityRepository amenityRepository;
     private final RoomMapper roomMapper;
 

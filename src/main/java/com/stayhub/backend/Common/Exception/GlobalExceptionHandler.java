@@ -36,6 +36,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getStatusCode()).body(responseError);
     }
 
+    @ExceptionHandler(InvalidDataException.class)
+    public ResponseEntity<ResponseError> handleInvalidDataException(InvalidDataException exception) {
+        log.warn("Lỗi dữ liệu không hợp lệ: {}", exception.getMessage());
+
+        ResponseError responseError = ResponseError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(exception.getMessage())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseError);
+    }
+
     @ExceptionHandler(value = ResourceNotFoundException.class)
     ResponseEntity<ResponseError> handlingResourceNotFoundException(ResourceNotFoundException exception) {
         ResponseError responseError = ResponseError.builder()

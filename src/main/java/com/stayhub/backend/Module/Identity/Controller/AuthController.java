@@ -23,7 +23,7 @@ public class AuthController {
     private final AuthService authService;
     private final HostOnboardingService hostOnboardingService;
 
-    @Operation(summary = "Tất cả người dùng - API này được sử dụng để đăng ký tài khoản khách hàng mới trên hệ thống.",
+    @Operation(summary = "All - Tạo tài khoản và gửi email xác thực",
     description = """
             Phương thức: POST
             
@@ -41,12 +41,14 @@ public class AuthController {
         return new ResponseData<>(HttpStatus.CREATED.value(), message);
     }
 
+    @Operation(summary = "All - Xác thực email để kích hoạt tài khoản")
     @GetMapping("/verify-email")
     public ResponseData<String> verifyAccount(@RequestParam("token") String token) {
         String message = authService.verifyEmailToken(token);
         return new ResponseData<>(HttpStatus.OK.value(), message);
     }
 
+    @Operation(summary = "All - Đăng nhập")
     @PostMapping("/login")
     public ResponseData<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         LoginResponse response = authService.login(loginRequest);
@@ -59,7 +61,9 @@ public class AuthController {
         return new ResponseData<>(200, "Làm mới token thành công", response);
     }
 
+    @Operation(summary = "Người dùng đã xác thực - Đăng xuất khỏi hệ thống")
     @PostMapping("/logout")
+    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_HOST') or hasAuthority('ROLE_ADMIN')")
     public ResponseData<String> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request);
         return new ResponseData<>(HttpStatus.OK.value(), "Đăng xuất thành công");
@@ -67,7 +71,7 @@ public class AuthController {
 
     @PostMapping("/host-applications")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    @Operation(summary = "Người dùng có quyền Khách hàng ROLE_USER - API này dùng để nộp hồ sơ nâng cấp thành Chủ nhà kèm theo thông tin của căn nhà đầu tiên.",
+    @Operation(summary = "USER - Đăng ký chủ nhà",
     description = """
             Phương thức: POST
             
@@ -92,7 +96,7 @@ public class AuthController {
 
     @PutMapping("/{id}/approval-host")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @Operation(summary = "Quản trị viên ROLE_ADMIN - API này dùng để xét duyệt hồ sơ đăng ký Chủ nhà của người dùng.",
+    @Operation(summary = "ADMIN - Duyệt hồ sơ đăng ký chủ nhà",
     description = """
             Phương thức: PUT
             

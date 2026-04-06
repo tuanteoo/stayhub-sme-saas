@@ -240,6 +240,28 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public PageResponse<PropertyCardResponse> getPropertiesForGuest(int page, int size, String sortBy, String sortDir, String destination, Integer guestCount, LocalDate checkInDate, LocalDate checkOutDate, String categorySlug) {
+        if (checkInDate != null || checkOutDate != null) {
+            if (checkInDate == null || checkOutDate == null) {
+                throw new InvalidDataException("Vui lòng chọn đầy đủ ngày nhận phòng và ngày trả phòng.");
+            }
+
+            LocalDate today = LocalDate.now();
+
+            if (checkInDate.isBefore(today)) {
+                throw new InvalidDataException("Ngày nhận phòng không được nằm trong quá khứ.");
+            }
+
+            if (!checkInDate.isBefore(checkOutDate)) {
+                throw new InvalidDataException("Ngày trả phòng phải diễn ra sau ngày nhận phòng.");
+            }
+
+            LocalDate maxCheckOutDate = today.plusDays(365);
+            if (checkOutDate.isAfter(maxCheckOutDate)) {
+                throw new InvalidDataException("Hệ thống hiện tại chỉ hỗ trợ tìm và đặt phòng trước tối đa 1 năm (đến ngày " + maxCheckOutDate + ").");
+            }
+        }
+
+
         Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
         Specification<Property> spec = PropertySpecification.buildSearchFilter(destination, guestCount, checkInDate, checkOutDate, categorySlug);
         Page<Property> propertyPage = propertyRepository.findAll(spec, pageable);

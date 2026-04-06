@@ -22,7 +22,7 @@ import java.util.List;
 public class RentalTypeController {
     private final RentalTypeService rentalTypeService;
 
-    @Operation(summary = "Admin - Tạo hàng loạt loại hình và danh mục")
+    @Operation(summary = "ADMIN - Tạo hàng loạt loại hình và danh mục")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping("/admin/rental-types/bulk")
     public ResponseData<String> bulkCreateRentalTypes(@RequestBody @Valid List<RentalTypeBulkRequest> requests) {
@@ -30,7 +30,7 @@ public class RentalTypeController {
         return new ResponseData<>(HttpStatus.CREATED.value(), "Tạo thành công dữ liệu Loại hình và Danh mục!");
     }
 
-    @Operation(summary = "Lấy danh sách loại hình cho thuê và danh mục")
+    @Operation(summary = "All - Lấy danh sách loại hình cho thuê và danh mục")
     @GetMapping("/public/rental-types")
     public ResponseData<List<RentalTypeResponse>> getAllRentalTypes() {
         List<RentalTypeResponse> response = rentalTypeService.getAllRentalTypes();

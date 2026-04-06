@@ -20,6 +20,7 @@ import java.util.List;
 public class AmenityController {
     private final AmenityService amenityService;
 
+    @Operation(summary = "ADMIN - Tạo tiện ích mới")
     @PostMapping("/admin/amenities")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseData<AmenityResponse> createAmenity(@Valid @RequestBody AmenityRequest request) {
@@ -27,7 +28,7 @@ public class AmenityController {
         return new ResponseData<>(201, "Tạo tiện ích thành công", response);
     }
 
-    @Operation(summary = "Lấy danh sách tiện tích")
+    @Operation(summary = "All - Lấy danh sách tiện tích")
     @GetMapping("/public/amenities")
     public ResponseData<List<AmenityResponse>> getAllAmenity() {
         List<AmenityResponse> response = amenityService.getAllAmenities();

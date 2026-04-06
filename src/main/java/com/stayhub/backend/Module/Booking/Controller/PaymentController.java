@@ -24,7 +24,7 @@ public class PaymentController {
 
     @GetMapping("/vnpay/create-url")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    @Operation(summary = "Lấy URL thanh toán VNPAY cho đơn đặt phòng")
+    @Operation(summary = "USER - Tạo URL thanh toán VNPAY cho booking")
     public ResponseEntity<ResponseData<String>> createVNPayUrl(
             @RequestParam String bookingCode,
             HttpServletRequest request) {

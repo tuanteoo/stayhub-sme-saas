@@ -83,11 +83,15 @@ public record PropertyCreateRequest(
         @DecimalMin(value = "0.0", message = "Phí dọn dẹp không được âm")
         BigDecimal cleaningFee,
 
+        @Schema(description = "Số lượng phòng của chỗ ở (Từ 1 trở lên) - Chỉ nhập khi chọn hình thức thuê Toàn bộ chỗ ở", example = "")
+        Integer roomCount,
+
         @Schema(description = "Danh sách URL hình ảnh của chỗ ở (Tối thiểu 5 hình ảnh để đảm bảo chất lượng tin đăng)", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\", \"https://example.com/image3.jpg\", \"https://example.com/image4.jpg\", \"https://example.com/image5.jpg\"]")
         @NotNull(message = "Danh sách ảnh không được để trống")
         @Size(min = 5, message = "Vui lòng tải lên tối thiểu 5 hình ảnh để đảm bảo chất lượng tin đăng")
         List<String> imageUrls,
 
+        @Schema(description = "Tối thiểu 1 phòng - Thuê theo phòng, Duy nhất 1 phòng (đại diện cho chỗ ở) - Toàn bộ chỗ ở")
         @NotEmpty(message = "Chỗ ở phải có ít nhất 1 phòng")
         @Valid List<RoomCreateRequest> rooms
 )

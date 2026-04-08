@@ -63,14 +63,20 @@ public class PropertyServiceImpl implements PropertyService {
         RentalType rentalType = rentalTypeRepository.findById(request.rentalTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại hình cho thuê!"));
 
+        int finalRoomCount = 1;
         if ("toan-bo-cho-o".equals(rentalType.getSlug())) {
             if (request.rooms() == null || request.rooms().size() != 1) {
                 throw new InvalidDataException("Loại hình 'Toàn bộ chỗ ở' chỉ được phép khai báo 1 phòng duy nhất (đại diện cho toàn bộ căn nhà)!");
             }
+            if (request.roomCount() == null || request.roomCount() < 1) {
+                throw new InvalidDataException("Vui lòng nhập số lượng phòng của căn nhà!");
+            }
+            finalRoomCount = request.roomCount();
         }else  {
             if (request.rooms() == null || request.rooms().isEmpty()) {
                 throw new InvalidDataException("Vui lòng thêm ít nhất 1 phòng cho chỗ ở của bạn!");
             }
+            finalRoomCount = request.rooms().size();
         }
 
         Property property = Property.builder()
@@ -88,7 +94,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .slug(SlugUtils.toSlug(request.name() + "-" + System.currentTimeMillis()))
                 .weekendSurchargePercentage(request.weekendSurchargePercentage())
                 .cleaningFee(request.cleaningFee())
-                .roomCount(request.rooms().size())
+                .roomCount(finalRoomCount)
                 .status(PropertyStatus.PENDING_REVIEW)
                 .build();
 

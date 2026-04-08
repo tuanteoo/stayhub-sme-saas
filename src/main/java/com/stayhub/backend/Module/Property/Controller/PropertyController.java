@@ -7,6 +7,7 @@ import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.Service.CategoryService;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
+import com.stayhub.backend.Module.Property.Service.SubscriptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,6 +30,7 @@ import java.util.List;
 public class PropertyController {
     private final PropertyService propertyService;
     private final CategoryService categoryService;
+    private final SubscriptionService subscriptionService;
 
     @PreAuthorize("hasAuthority('ROLE_HOST')")
     @Operation(summary = "HOST - Tạo bài đăng",
@@ -124,4 +126,22 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh mục thành công", categoryService.getAllCategories()));
     }
 
+    @Operation(summary = "HOST - Lấy thông tin gói cước của Host")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @GetMapping("/host/my-subscription")
+    public ResponseEntity<ResponseData<MySubscriptionResponse>> getMySubscription(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        MySubscriptionResponse response = subscriptionService.getMySubscription(customUserDetails.getUser().getId());
+        return ResponseEntity.ok(new ResponseData<>(200, "Thành công", response));
+    }
+
+    @Operation(summary = "HOST - Lấy danh sách gói cước hoạt động")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @GetMapping("/host/subscription-plans")
+    public ResponseEntity<ResponseData<java.util.List<SubscriptionPlanResponse>>> getActiveSubscriptionPlans() {
+
+        java.util.List<SubscriptionPlanResponse> response = subscriptionService.getActiveSubscriptionPlans();
+
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách gói cước thành công", response));
+    }
 }

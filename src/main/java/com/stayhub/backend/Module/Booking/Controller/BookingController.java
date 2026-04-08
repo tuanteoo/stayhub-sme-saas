@@ -4,6 +4,7 @@ import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
 import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
+import com.stayhub.backend.Module.Booking.DTO.Response.GuestBookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.HostBookingResponse;
 import com.stayhub.backend.Module.Booking.Service.BookingService;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
@@ -28,7 +29,7 @@ public class BookingController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    @Operation(summary = "Guest - Tạo đơn đặt phòng")
+    @Operation(summary = "USER - Tạo đơn đặt phòng")
     public ResponseEntity<ResponseData<String>> createBooking(
             @Valid @RequestBody BookingCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
@@ -45,6 +46,7 @@ public class BookingController {
     }
 
     @Operation(summary = "HOST - Lấy danh sách đơn đặt phòng")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
     @GetMapping("/host")
     public ResponseEntity<ResponseData<PageResponse<HostBookingResponse>>> getBookingsForHost(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
@@ -56,5 +58,18 @@ public class BookingController {
         PageResponse<HostBookingResponse> response = bookingService.getBookingsForHost(hostId, page, size);
 
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách đơn đặt phòng thành công", response));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    @Operation(summary = "USER - Xem lịch sử các chuyến đi")
+    public ResponseEntity<ResponseData<PageResponse<GuestBookingResponse>>> getMyTrips(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        PageResponse<GuestBookingResponse> response = bookingService.getBookingForGuest(currentUser.getUser().getId(), page, size);
+
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách chuyến đi thành công", response));
     }
 }

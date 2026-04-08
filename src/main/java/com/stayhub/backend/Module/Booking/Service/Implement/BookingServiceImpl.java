@@ -8,6 +8,7 @@ import com.stayhub.backend.Common.Util.BookingStatus;
 import com.stayhub.backend.Common.Util.PaginationUtil;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
 import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
+import com.stayhub.backend.Module.Booking.DTO.Response.GuestBookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.HostBookingResponse;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Model.BookingRoom;
@@ -16,6 +17,7 @@ import com.stayhub.backend.Module.Booking.Service.BookingService;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.Model.Property;
+import com.stayhub.backend.Module.Property.Model.PropertyImage;
 import com.stayhub.backend.Module.Property.Model.Room;
 import com.stayhub.backend.Module.Property.Model.RoomAvailability;
 import com.stayhub.backend.Module.Property.Repository.PropertyRepository;
@@ -221,8 +223,7 @@ public class BookingServiceImpl implements BookingService {
     public PageResponse<HostBookingResponse> getBookingsForHost(Long hostId, int page, int size) {
         Pageable pageable = PaginationUtil.getPageable(page, size, "createdAt", "desc");
 
-        // 2. Query Database
-        Page<Booking> bookingPage = bookingRepository.findByProperty_Host_Id(hostId, pageable);
+        Page<Booking> bookingPage = bookingRepository.findBookingsByHostId(hostId, pageable);
 
         List<HostBookingResponse> hostBookingResponses = bookingPage.stream()
                 .map(this::mapToHostBookingResponse)
@@ -234,6 +235,25 @@ public class BookingServiceImpl implements BookingService {
                 bookingPage.getTotalPages(),
                 bookingPage.getTotalElements(),
                 hostBookingResponses
+        );
+    }
+
+    @Override
+    public PageResponse<GuestBookingResponse> getBookingForGuest(Long guestId, int page, int size) {
+        Pageable pageable = PaginationUtil.getPageable(page, size, "createdAt", "desc");
+
+        Page<Booking> bookingPage = bookingRepository.findByUser_IdOrderByCreatedAtDesc(guestId, pageable);
+
+        List<GuestBookingResponse> bookingResponses = bookingPage.stream()
+                .map(this::mapToGuestBookingResponse)
+                .toList();
+
+        return new PageResponse<>(
+                bookingPage.getNumber() + 1,
+                bookingPage.getSize(),
+                bookingPage.getTotalPages(),
+                bookingPage.getTotalElements(),
+                bookingResponses
         );
     }
 
@@ -258,6 +278,32 @@ public class BookingServiceImpl implements BookingService {
                 .finalAmount(finalAmount)
                 .amountPaid(amountPaid)
                 .isFullyPaid(booking.getIsFullyPaid())
+                .status(booking.getStatus())
+                .createdAt(booking.getCreatedAt())
+                .build();
+    }
+    private GuestBookingResponse mapToGuestBookingResponse(Booking booking) {
+        String thumbnail = booking.getProperty().getImages().stream()
+                .filter(img -> Boolean.TRUE.equals(img.getIsThumbnail()))
+                .map(PropertyImage::getUrl)
+                .findFirst()
+                .orElse(booking.getProperty().getImages().isEmpty() ? null : booking.getProperty().getImages().get(0).getUrl());
+
+        BigDecimal roomPrice = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
+        BigDecimal cleaningFee = booking.getCleaningFee() != null ? booking.getCleaningFee() : BigDecimal.ZERO;
+        BigDecimal finalTotal = roomPrice.add(cleaningFee);
+
+        return GuestBookingResponse.builder()
+                .bookingCode(booking.getBookingCode())
+                .propertyName(booking.getProperty().getName())
+                .propertyAddress(booking.getProperty().getAddressDetail() + ", " + booking.getProperty().getProvince())
+                .hostName(booking.getProperty().getHost().getProfile().getFullName())
+                .hostPhone(booking.getProperty().getHost().getProfile().getPhoneNumber())
+
+                .thumbnailUrl(thumbnail)
+                .checkInDate(booking.getCheckInDate())
+                .checkOutDate(booking.getCheckOutDate())
+                .totalAmount(finalTotal)
                 .status(booking.getStatus())
                 .createdAt(booking.getCreatedAt())
                 .build();

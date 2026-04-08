@@ -1,4 +1,4 @@
-package com.stayhub.backend.Module.Property.Mapper;
+package com.stayhub.backend.Common.Mapper;
 
 import com.stayhub.backend.Module.Property.DTO.Response.CategoryResponse;
 import com.stayhub.backend.Module.Property.Model.Category;

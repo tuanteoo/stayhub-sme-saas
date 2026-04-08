@@ -2,12 +2,14 @@ package com.stayhub.backend.Module.Booking.DTO.Response;
 
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
+import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Builder
 public record BookingResponse(
         Long id,
         String bookingCode,

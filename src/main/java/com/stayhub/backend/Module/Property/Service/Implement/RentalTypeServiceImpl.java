@@ -5,7 +5,7 @@ import com.stayhub.backend.Module.Property.DTO.Request.CategoryRequest;
 import com.stayhub.backend.Module.Property.DTO.Request.RentalTypeBulkRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.CategoryResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.RentalTypeResponse;
-import com.stayhub.backend.Module.Property.Mapper.CategoryMapper;
+import com.stayhub.backend.Common.Mapper.CategoryMapper;
 import com.stayhub.backend.Module.Property.Model.Category;
 import com.stayhub.backend.Module.Property.Model.RentalType;
 import com.stayhub.backend.Module.Property.Repository.CategoryRepository;

@@ -1,10 +1,14 @@
 package com.stayhub.backend.Module.Booking.Service.Implement;
 
+import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
+import com.stayhub.backend.Common.Util.PaginationUtil;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
+import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
+import com.stayhub.backend.Module.Booking.DTO.Response.HostBookingResponse;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Model.BookingRoom;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
@@ -19,6 +23,8 @@ import com.stayhub.backend.Module.Property.Repository.RoomAvailabilityRepository
 import com.stayhub.backend.Module.Property.Repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -209,5 +215,51 @@ public class BookingServiceImpl implements BookingService {
         }
         roomAvailabilityRepository.saveAll(availabilities);
         return booking.getBookingCode();
+    }
+
+    @Override
+    public PageResponse<HostBookingResponse> getBookingsForHost(Long hostId, int page, int size) {
+        Pageable pageable = PaginationUtil.getPageable(page, size, "createdAt", "desc");
+
+        // 2. Query Database
+        Page<Booking> bookingPage = bookingRepository.findByProperty_Host_Id(hostId, pageable);
+
+        List<HostBookingResponse> hostBookingResponses = bookingPage.stream()
+                .map(this::mapToHostBookingResponse)
+                .toList();
+
+        return new PageResponse<>(
+                bookingPage.getNumber() + 1,
+                bookingPage.getSize(),
+                bookingPage.getTotalPages(),
+                bookingPage.getTotalElements(),
+                hostBookingResponses
+        );
+    }
+
+    private HostBookingResponse mapToHostBookingResponse(Booking booking) {
+
+        BigDecimal total = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
+        BigDecimal cleaning = booking.getCleaningFee() != null ? booking.getCleaningFee() : BigDecimal.ZERO;
+        BigDecimal discount = booking.getDiscountAmount() != null ? booking.getDiscountAmount() : BigDecimal.ZERO;
+        BigDecimal finalAmount = total.add(cleaning).subtract(discount);
+
+        BigDecimal amountPaid = Boolean.TRUE.equals(booking.getIsFullyPaid())
+                ? finalAmount
+                : (booking.getDepositAmount() != null ? booking.getDepositAmount() : BigDecimal.ZERO);
+
+        return HostBookingResponse.builder()
+                .bookingCode(booking.getBookingCode())
+                .guestName(booking.getUser().getProfile().getFullName())
+                .propertyName(booking.getProperty().getName())
+                .checkInDate(booking.getCheckInDate())
+                .checkOutDate(booking.getCheckOutDate())
+                .totalGuests(booking.getTotalGuests())
+                .finalAmount(finalAmount)
+                .amountPaid(amountPaid)
+                .isFullyPaid(booking.getIsFullyPaid())
+                .status(booking.getStatus())
+                .createdAt(booking.getCreatedAt())
+                .build();
     }
 }

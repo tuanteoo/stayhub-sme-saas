@@ -12,7 +12,7 @@ import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
-import com.stayhub.backend.Module.Property.Mapper.RoomMapper;
+import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;

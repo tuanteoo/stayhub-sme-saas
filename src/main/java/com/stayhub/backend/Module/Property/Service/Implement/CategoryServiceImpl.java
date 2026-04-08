@@ -1,7 +1,7 @@
 package com.stayhub.backend.Module.Property.Service.Implement;
 
 import com.stayhub.backend.Module.Property.DTO.Response.CategoryResponse;
-import com.stayhub.backend.Module.Property.Mapper.CategoryMapper;
+import com.stayhub.backend.Common.Mapper.CategoryMapper;
 import com.stayhub.backend.Module.Property.Repository.CategoryRepository;
 import com.stayhub.backend.Module.Property.Service.CategoryService;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.stayhub.backend.Module.Property.Mapper;
+package com.stayhub.backend.Common.Mapper;
 
 import com.stayhub.backend.Module.Property.DTO.Response.AmenityResponse;
 import com.stayhub.backend.Module.Property.Model.Amenity;

@@ -1,4 +1,4 @@
-package com.stayhub.backend.Module.Booking.Service;
+package com.stayhub.backend.Common.Service;
 
 import jakarta.servlet.http.HttpServletRequest;
 

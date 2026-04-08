@@ -1,4 +1,4 @@
-package com.stayhub.backend.Common.Service;
+package com.stayhub.backend.Common.Service.Implement;
 
 import com.stayhub.backend.Common.DTO.Request.PresignedUrlRequest;
 import com.stayhub.backend.Common.DTO.Response.PresignedUrlResponse;

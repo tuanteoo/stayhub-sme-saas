@@ -1,7 +1,7 @@
 package com.stayhub.backend.Module.Booking.Controller;
 
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
-import com.stayhub.backend.Module.Booking.Service.PaymentService;
+import com.stayhub.backend.Common.Service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;

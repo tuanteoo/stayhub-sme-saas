@@ -3,7 +3,7 @@ package com.stayhub.backend.Common.Controller;
 import com.stayhub.backend.Common.DTO.Request.PresignedUrlRequest;
 import com.stayhub.backend.Common.DTO.Response.PresignedUrlResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
-import com.stayhub.backend.Common.Service.S3PresignedService;
+import com.stayhub.backend.Common.Service.Implement.S3PresignedService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;

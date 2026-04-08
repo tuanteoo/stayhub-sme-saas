@@ -1,15 +1,14 @@
-package com.stayhub.backend.Module.Booking.Service.Implement;
+package com.stayhub.backend.Common.Service.Implement;
 
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Service.EmailService;
+import com.stayhub.backend.Common.Service.PaymentService;
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
 import com.stayhub.backend.Config.VNPayConfig;
 import com.stayhub.backend.Module.Booking.Model.Booking;
-import com.stayhub.backend.Module.Booking.Model.BookingRoom;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
-import com.stayhub.backend.Module.Booking.Service.PaymentService;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Property.Repository.RoomAvailabilityRepository;
 import jakarta.servlet.http.HttpServletRequest;

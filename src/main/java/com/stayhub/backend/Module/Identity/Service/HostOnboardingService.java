@@ -6,5 +6,5 @@ import com.stayhub.backend.Module.Identity.DTO.Request.HostVerificationRequest;
 
 public interface HostOnboardingService {
     String submitHostApplication(String email, HostRegistrationWithPropertyRequest request);
-    void reviewHostApplication(Long id, HostApprovalRequest request);
+    void reviewHostApplication(String hostCode, HostApprovalRequest request);
 }

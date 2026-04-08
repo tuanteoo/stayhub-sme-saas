@@ -14,8 +14,6 @@ public enum ErrorCode {
     USERNAME_INVALID(1004, "Tên đăng nhập phải có ít nhất 3 ký tự", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID(1005, "Mật khẩu phải có ít nhất 8 ký tự", HttpStatus.BAD_REQUEST),
     INVALID_DATA(1006, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
-
-
     // --- BỔ SUNG MỚI CHO AUTH & IDENTITY ---
     EMAIL_EXISTED(1007, "Email này đã được đăng ký", HttpStatus.CONFLICT),
     ROLE_NOT_FOUND(1008, "Lỗi cấu hình: Không tìm thấy vai trò hệ thống", HttpStatus.INTERNAL_SERVER_ERROR),
@@ -27,7 +25,8 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND(1014, "Không tìm thấy danh mục nhà", HttpStatus.NOT_FOUND),
     RENTAL_TYPE_NOT_FOUND(1015, "Không tìm thấy loại hình cho thuê", HttpStatus.NOT_FOUND),
     POLICY_NOT_FOUND(1016, "Không tìm thấy chính sách hủy phòng", HttpStatus.NOT_FOUND),
-    PASSWORD_EMAIL_WRONG(1017, "Email hoặc mật khẩu không chính xác", HttpStatus.NOT_FOUND);
+    PASSWORD_EMAIL_WRONG(1017, "Email hoặc mật khẩu không chính xác", HttpStatus.NOT_FOUND),
+    EMAIL_SEND_FAILED(1018, "Gửi email thất bại, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final int code;
     private final String message;

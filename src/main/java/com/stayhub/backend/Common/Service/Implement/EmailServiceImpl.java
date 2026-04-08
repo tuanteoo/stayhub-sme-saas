@@ -1,7 +1,10 @@
 package com.stayhub.backend.Common.Service.Implement;
 
+import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Service.EmailService;
+import com.stayhub.backend.Common.Util.ErrorCode;
 import com.stayhub.backend.Module.Booking.Model.Booking;
+import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -98,6 +101,27 @@ public class EmailServiceImpl implements EmailService {
 
         } catch (Exception e) {
             log.error("Lỗi khi gửi email biên lai cho booking {}: {}", booking.getBookingCode(), e.getMessage());
+        }
+    }
+
+    @Override
+    public void sendHostApprovalEmail(String toEmail, String hostName) {
+        try {
+            Context context = new Context();
+            context.setVariable("hostName", hostName);
+
+            String htmlContent = templateEngine.process("email/host-approval", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setSubject("🎉 Chúc mừng! Đơn đăng ký Chủ nhà StayHub của bạn đã được phê duyệt");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
         }
     }
 }

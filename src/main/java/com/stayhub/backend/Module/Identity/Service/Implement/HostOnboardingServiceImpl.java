@@ -2,8 +2,11 @@ package com.stayhub.backend.Module.Identity.Service.Implement;
 
 import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
+import com.stayhub.backend.Common.Service.EmailService;
 import com.stayhub.backend.Common.Util.ErrorCode;
 import com.stayhub.backend.Common.Util.HostOnboardingStatus;
+import com.stayhub.backend.Common.Util.SubscriptionTier;
+import com.stayhub.backend.Common.Util.UserSubscriptionStatus;
 import com.stayhub.backend.Module.Identity.DTO.Request.HostApprovalRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.HostRegistrationWithPropertyRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.HostVerificationRequest;
@@ -14,6 +17,8 @@ import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.RoleRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Identity.Service.HostOnboardingService;
+import com.stayhub.backend.Module.Property.Model.SubscriptionPlan;
+import com.stayhub.backend.Module.Property.Model.UserSubscription;
 import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +36,9 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
     private final PropertyService propertyService;
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private final UserSubscriptionRepository userSubscriptionRepository;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final EmailService emailService;
 
     private String generateRandomBlock(int length) {
         StringBuilder sb = new StringBuilder(length);
@@ -85,9 +93,9 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
     }
 
     @Override
-    public void reviewHostApplication(Long id, HostApprovalRequest request) {
-        HostDetail hostDetail = hostDetailRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.HOST_PROFILE_NOT_FOUND));
+    public void reviewHostApplication(String hostCode, HostApprovalRequest request) {
+        HostDetail hostDetail = hostDetailRepository.findByHostCode(hostCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ đăng ký host!"));
 
         hostDetail.setOnboardingStatus(request.status());
 
@@ -106,7 +114,23 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
 
             userRepository.save(user);
 
-            propertyService.approveFirstPendingPropertyByHost(id);
+            propertyService.approveFirstPendingPropertyByHost(hostDetail.getId());
+
+            SubscriptionPlan freePlan = subscriptionPlanRepository.findByTier(SubscriptionTier.FREE)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói cước FREE cấu hình trong hệ thống"));
+
+            UserSubscription userSubscription = UserSubscription.builder()
+                    .user(user)
+                    .plan(freePlan)
+                    .status(UserSubscriptionStatus.ACTIVE)
+                    .autoRenew(true)
+                    .currentCommissionRate(freePlan.getCommissionRate())
+                    .currentMaxListings(freePlan.getMaxListings())
+                    .currentCreditLimit(freePlan.getCreditLimit())
+                    .build();
+            userSubscriptionRepository.save(userSubscription);
+
+            emailService.sendHostApprovalEmail(user.getEmail(), user.getProfile().getFullName());
         }
 
         hostDetailRepository.save(hostDetail);

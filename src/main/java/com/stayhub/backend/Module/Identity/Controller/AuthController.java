@@ -109,10 +109,9 @@ public class AuthController {
             Chi tiết phản hồi: Trả về chuỗi thông báo trạng thái phê duyệt tương ứng với kết quả quyết định.
             """)
     public ResponseEntity<ResponseData<String>> reviewApplication(
-            @PathVariable Long id,
+            @PathVariable String hostCode,
             @Valid @RequestBody HostApprovalRequest request) {
-
-        hostOnboardingService.reviewHostApplication(id, request);
+        hostOnboardingService.reviewHostApplication(hostCode, request);
 
         String message = switch (request.status()) {
             case APPROVED -> "Đã duyệt hồ sơ và cấp quyền Chủ nhà thành công!";

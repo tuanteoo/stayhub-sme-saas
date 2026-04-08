@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -44,4 +45,10 @@ public class UserSubscription {
 
     @Column(name = "current_commission_rate")
     private Double currentCommissionRate;
+
+    @Column(name = "current_max_listings")
+    private Integer currentMaxListings;
+
+    @Column(name = "current_credit_limit", nullable = false)
+    private BigDecimal currentCreditLimit;
 }

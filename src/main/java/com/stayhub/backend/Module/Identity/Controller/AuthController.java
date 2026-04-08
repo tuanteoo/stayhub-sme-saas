@@ -94,7 +94,7 @@ public class AuthController {
                 "Gửi hồ sơ đăng ký thành công! Vui lòng chờ Ban quản trị StayHub phê duyệt.", hostCode);
     }
 
-    @PutMapping("/{id}/approval-host")
+    @PutMapping("/admin/approval-host")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @Operation(summary = "ADMIN - Duyệt hồ sơ đăng ký chủ nhà",
     description = """
@@ -109,7 +109,7 @@ public class AuthController {
             Chi tiết phản hồi: Trả về chuỗi thông báo trạng thái phê duyệt tương ứng với kết quả quyết định.
             """)
     public ResponseEntity<ResponseData<String>> reviewApplication(
-            @PathVariable String hostCode,
+            @RequestParam String hostCode,
             @Valid @RequestBody HostApprovalRequest request) {
         hostOnboardingService.reviewHostApplication(hostCode, request);
 

@@ -36,12 +36,7 @@ public class PropertyController {
     @Operation(summary = "HOST - Tạo bài đăng",
     description = """
             Phương thức: POST
-            
-            Đường dẫn: /api/v1/properties
-            
             Đối tượng yêu cầu: PropertyCreateRequest
-            
-            Chi tiết phản hồi: Trả về chuỗi thông báo tạo tin đăng thành công và chờ duyệt.
             """)
     @PostMapping
     public ResponseData<String> createProperty(@AuthenticationPrincipal CustomUserDetails customUserDetails, @Valid @RequestBody PropertyCreateRequest request) {

@@ -51,5 +51,12 @@ springdoc:
     tags-sorter: alpha
     disable-swagger-default-url: true
     display-request-duration: true
+    try-it-out-enabled: true
+    supported-submit-methods: ["get", "post", "put", "delete", "patch"]
+    show-extensions: true
+    show-common-extensions: true
   show-actuator: true
   paths-to-match: /**
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  writer-with-default-pretty-printer: true

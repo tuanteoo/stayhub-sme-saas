@@ -2,6 +2,7 @@ package com.stayhub.backend.Module.Booking.Service.Implement;
 
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
+import com.stayhub.backend.Common.Service.EmailService;
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
 import com.stayhub.backend.Config.VNPayConfig;
@@ -9,6 +10,7 @@ import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Model.BookingRoom;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Booking.Service.PaymentService;
+import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Property.Repository.RoomAvailabilityRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import java.util.*;
 public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final RoomAvailabilityRepository roomAvailabilityRepository;
+    private final EmailService emailService;
 
     @Value("${vnpay.tmn-code}")
     private String vnp_TmnCode;
@@ -231,6 +234,9 @@ public class PaymentServiceImpl implements PaymentService {
         if ("00".equals(vnp_ResponseCode)) {
             if (booking.getPaymentOption() == BookingPaymentOption.PAY_IN_FULL) {
                 booking.setStatus(BookingStatus.CONFIRMED);
+
+                User guest = booking.getUser();
+                emailService.sendBookingReceiptEmail(guest.getEmail(),guest.getProfile().getFullName(), booking);
             } else {
                 booking.setStatus(BookingStatus.PARTIALLY_PAID);
             }

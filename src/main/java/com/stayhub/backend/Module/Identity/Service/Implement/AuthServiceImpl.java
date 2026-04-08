@@ -17,7 +17,7 @@ import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetailsService;
 import com.stayhub.backend.Module.Identity.Security.JwtTokenProvider;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
-import com.stayhub.backend.Module.Identity.Service.EmailService;
+import com.stayhub.backend.Common.Service.EmailService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;

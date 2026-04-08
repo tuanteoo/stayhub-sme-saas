@@ -83,8 +83,6 @@ public record PropertyCreateRequest(
         @DecimalMin(value = "0.0", message = "Phí dọn dẹp không được âm")
         BigDecimal cleaningFee,
 
-        Integer roomCount,
-
         @Schema(description = "Danh sách URL hình ảnh của chỗ ở (Tối thiểu 5 hình ảnh để đảm bảo chất lượng tin đăng)", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\", \"https://example.com/image3.jpg\", \"https://example.com/image4.jpg\", \"https://example.com/image5.jpg\"]")
         @NotNull(message = "Danh sách ảnh không được để trống")
         @Size(min = 5, message = "Vui lòng tải lên tối thiểu 5 hình ảnh để đảm bảo chất lượng tin đăng")

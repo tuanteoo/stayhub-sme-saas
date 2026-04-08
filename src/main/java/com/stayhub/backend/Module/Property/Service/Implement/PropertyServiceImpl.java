@@ -4,6 +4,7 @@ import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
+import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
@@ -12,7 +13,6 @@ import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
-import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
@@ -63,20 +63,14 @@ public class PropertyServiceImpl implements PropertyService {
         RentalType rentalType = rentalTypeRepository.findById(request.rentalTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại hình cho thuê!"));
 
-        int finalRoomCount = 1;
         if ("toan-bo-cho-o".equals(rentalType.getSlug())) {
             if (request.rooms() == null || request.rooms().size() != 1) {
                 throw new InvalidDataException("Loại hình 'Toàn bộ chỗ ở' chỉ được phép khai báo 1 phòng duy nhất (đại diện cho toàn bộ căn nhà)!");
             }
-            if (request.roomCount() == null || request.roomCount() < 1) {
-                throw new InvalidDataException("Vui lòng nhập số lượng phòng của căn nhà!");
-            }
-            finalRoomCount = request.roomCount();
         }else  {
             if (request.rooms() == null || request.rooms().isEmpty()) {
                 throw new InvalidDataException("Vui lòng thêm ít nhất 1 phòng cho chỗ ở của bạn!");
             }
-            finalRoomCount = request.rooms().size();
         }
 
         Property property = Property.builder()
@@ -94,7 +88,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .slug(SlugUtils.toSlug(request.name() + "-" + System.currentTimeMillis()))
                 .weekendSurchargePercentage(request.weekendSurchargePercentage())
                 .cleaningFee(request.cleaningFee())
-                .roomCount(finalRoomCount)
+                .roomCount(request.rooms().size())
                 .status(PropertyStatus.PENDING_REVIEW)
                 .build();
 

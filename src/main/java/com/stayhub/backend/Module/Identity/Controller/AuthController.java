@@ -4,6 +4,7 @@ import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.DTO.Request.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
+import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Module.Identity.Service.HostOnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -86,9 +88,9 @@ public class AuthController {
             Chi tiết phản hồi: Trả về chuỗi thông báo gửi hồ sơ thành công và đang chờ ban quản trị phê duyệt.
             """)
     public ResponseData<String> submitApplication(
-            Principal principal,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @Valid @RequestBody HostRegistrationWithPropertyRequest request) {
-        String hostCode = hostOnboardingService.submitHostApplication(principal.getName(), request);
+        String hostCode = hostOnboardingService.submitHostApplication(customUserDetails.getUser().getId(), request);
 
         return new ResponseData<>(201,
                 "Gửi hồ sơ đăng ký thành công! Vui lòng chờ Ban quản trị StayHub phê duyệt.", hostCode);

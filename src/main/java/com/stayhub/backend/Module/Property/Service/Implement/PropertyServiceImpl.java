@@ -41,12 +41,13 @@ public class PropertyServiceImpl implements PropertyService {
     private final CategoryRepository categoryRepository;
     private final RentalTypeRepository rentalTypeRepository;
     private final AmenityRepository amenityRepository;
+    private final UserSubscriptionRepository userSubscriptionRepository;
     private final RoomMapper roomMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createProperty(String email, PropertyCreateRequest request) {
-        User currentUser = userRepository.findByEmail(email)
+    public void createProperty(Long hostId, PropertyCreateRequest request) {
+        User currentUser = userRepository.findById(hostId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng!"));
 
         HostDetail hostDetail = hostDetailRepository.findById(currentUser.getId())
@@ -79,6 +80,29 @@ public class PropertyServiceImpl implements PropertyService {
             finalRoomCount = request.rooms().size();
         }
 
+        boolean isPayAtCheckin = Boolean.TRUE.equals(request.isPayAtCheckinAllowed());
+        UserSubscription userSubscription = userSubscriptionRepository.findFirstByUser_IdAndStatusOrderByStartDateDesc(currentUser.getId(), UserSubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký hoạt động nào cho người dùng!"));
+        Integer finalDepositPercentage = 100;
+
+        if (isPayAtCheckin) {
+            Integer requestedDeposit = request.depositPercentage();
+            if (requestedDeposit == null) {
+                throw new InvalidDataException("Vui lòng thiết lập phần trăm cọc khi cho phép thanh toán tại chỗ.");
+            }
+
+            if (requestedDeposit < userSubscription.getCurrentCommissionRate() || requestedDeposit > 100.0) {
+                throw new InvalidDataException(
+                        String.format("Để đảm bảo thanh toán, phần trăm cọc tối thiểu phải bằng %s%% (Mức hoa hồng hiện tại của bạn) và tối đa là 100%%.", userSubscription.getCurrentCommissionRate())
+                );
+            }
+            finalDepositPercentage = requestedDeposit;
+        }else {
+            if (request.depositPercentage() != null) {
+                throw new InvalidDataException("Không được nhập phần trăm cọc khi bạn đã yêu cầu khách thanh toán toàn bộ (Không cho phép thanh toán tại chỗ).");
+            }
+        }
+
         Property property = Property.builder()
                 .host(currentUser)
                 .category(category)
@@ -92,6 +116,8 @@ public class PropertyServiceImpl implements PropertyService {
                 .name(request.name())
                 .description(request.description())
                 .slug(SlugUtils.toSlug(request.name() + "-" + System.currentTimeMillis()))
+                .isPayAtCheckinAllowed(request.isPayAtCheckinAllowed())
+                .depositPercentage(finalDepositPercentage)
                 .weekendSurchargePercentage(request.weekendSurchargePercentage())
                 .cleaningFee(request.cleaningFee())
                 .roomCount(finalRoomCount)
@@ -499,4 +525,5 @@ public class PropertyServiceImpl implements PropertyService {
                 new ArrayList<>(allAmenityNames)
         );
     }
+
 }

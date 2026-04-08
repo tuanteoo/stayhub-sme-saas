@@ -5,7 +5,9 @@ import com.stayhub.backend.Common.Util.StringUtil;
 import com.stayhub.backend.Module.Identity.Model.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
@@ -162,12 +164,12 @@ public class Property {
     private List<Room> rooms = new ArrayList<>();
 
     @Column(name = "created_at", updatable = false)
-    @org.hibernate.annotations.CreationTimestamp
+    @CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
-    @org.hibernate.annotations.UpdateTimestamp
+    @UpdateTimestamp
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime updatedAt;
 

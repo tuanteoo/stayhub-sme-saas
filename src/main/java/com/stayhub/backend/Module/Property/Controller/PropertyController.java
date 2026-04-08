@@ -26,7 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/properties")
 @RequiredArgsConstructor
-@Tag(name = "Property", description = "API Bài đăng về tài sản cho thuê")
+@Tag(name = "Property", description = "API về Tài sản")
 public class PropertyController {
     private final PropertyService propertyService;
     private final CategoryService categoryService;

@@ -35,6 +35,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .subscriptionId(subscription.getId())
                 .tier(subscription.getPlan().getTier())
                 .planName(subscription.getPlan().getName())
+                .commissionRate(subscription.getCurrentCommissionRate())
+                .maxListings(subscription.getCurrentMaxListings())
+                .creditLimit(subscription.getCurrentCreditLimit())
                 .build();
     }
 

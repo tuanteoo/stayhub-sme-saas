@@ -8,4 +8,5 @@ import java.util.List;
 public interface SubscriptionService {
     MySubscriptionResponse getMySubscription(Long hostId);
     List<SubscriptionPlanResponse> getActiveSubscriptionPlans();
+    void processSubscriptionPurchase(Long hostId, Long newPlanId);
 }

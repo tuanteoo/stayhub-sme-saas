@@ -1,13 +1,15 @@
-package com.stayhub.backend.Module.Booking.Controller;
+package com.stayhub.backend.Common.Controller;
 
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Common.Service.PaymentService;
+import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,17 +24,32 @@ import java.util.Map;
 public class PaymentController {
     private final PaymentService paymentService;
 
-    @GetMapping("/vnpay/create-url")
+    @GetMapping("/vnpay/booking/create-url")
     @PreAuthorize("hasAuthority('ROLE_USER')")
     @Operation(summary = "USER - Tạo URL thanh toán VNPAY cho booking")
     public ResponseEntity<ResponseData<String>> createVNPayUrl(
             @RequestParam String bookingCode,
             HttpServletRequest request) {
 
-        String paymentUrl = paymentService.createVNPayUrl(bookingCode, request);
+        String paymentUrl = paymentService.createBookingVNPayUrl(bookingCode, request);
 
         return ResponseEntity.ok(
                 new ResponseData<>(200, "Tạo URL thanh toán thành công", paymentUrl)
+        );
+    }
+
+    @GetMapping("/vnpay/subscription/create-url")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @Operation(summary = "HOST - Tạo URL thanh toán VNPAY để đăng ký/nâng cấp gói cước")
+    public ResponseEntity<ResponseData<String>> createSubscriptionVNPayUrl(
+            @RequestParam Long planId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            HttpServletRequest request) {
+
+        String paymentUrl = paymentService.createSubscriptionVNPayUrl(planId, userDetails.getUser().getId(), request);
+
+        return ResponseEntity.ok(
+                new ResponseData<>(200, "Tạo URL thanh toán VNPAY thành công", paymentUrl)
         );
     }
 

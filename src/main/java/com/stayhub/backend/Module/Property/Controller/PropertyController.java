@@ -68,7 +68,7 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách bài đăng của Host thành công", response));
     }
 
-    @Operation(summary = "All - Lấy 8 bài đăng nổi bật theo category slug")
+    @Operation(summary = "GUEST - Lấy 8 bài đăng nổi bật theo category slug")
     @GetMapping("/category/{slug}/top")
     public ResponseEntity<ResponseData<List<PropertyCardResponse>>> getTopPropertiesByCategorySlug(
             @PathVariable("slug") String categorySlug) {
@@ -77,7 +77,7 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách bài đăng theo category thành công", response));
     }
 
-    @Operation(summary = "All - Tìm kiếm và lọc bài đăng dựa trên các tiêu chí như điểm đến, số lượng khách, ngày nhận phòng, ngày trả phòng và danh mục.")
+    @Operation(summary = "GUEST_USER - Tìm kiếm và lọc bài đăng dựa trên các tiêu chí như điểm đến, số lượng khách, ngày nhận phòng, ngày trả phòng và danh mục.")
     @GetMapping
     public ResponseEntity<ResponseData<PageResponse<PropertyCardResponse>>> getProperties(
             @RequestParam(defaultValue = "1") int page,
@@ -95,7 +95,7 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", properties));
     }
 
-    @Operation(summary = "All - Xem chi tiết bài đăng dựa trên slug")
+    @Operation(summary = "GUEST_USER - Xem chi tiết bài đăng dựa trên slug")
     @GetMapping("/{slug}")
     public ResponseEntity<ResponseData<PropertyDetailResponse>> getPropertyDetail(
             @PathVariable String slug,
@@ -107,7 +107,7 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy thông tin chi tiết thành công", propertyDetail));
     }
 
-    @Operation(summary = "All - Tính tổng tiền cho đơn đặt phòng dựa trên slug bài đăng, ngày nhận phòng và ngày trả phòng")
+    @Operation(summary = "GUEST_USER - Tính tổng tiền cho đơn đặt phòng dựa trên slug bài đăng, ngày nhận phòng và ngày trả phòng")
     @GetMapping("/{slug}/calculate-price")
     public ResponseEntity<ResponseData<List<RoomPriceResponse>>> calculatePriceBySlug(
             @PathVariable String slug,

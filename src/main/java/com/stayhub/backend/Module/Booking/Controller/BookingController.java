@@ -1,7 +1,10 @@
 package com.stayhub.backend.Module.Booking.Controller;
 
+import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
+import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
+import com.stayhub.backend.Module.Booking.DTO.Response.HostBookingResponse;
 import com.stayhub.backend.Module.Booking.Service.BookingService;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,12 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
@@ -44,5 +42,19 @@ public class BookingController {
                         bookingCode
                 )
         );
+    }
+
+    @Operation(summary = "HOST - Lấy danh sách đơn đặt phòng")
+    @GetMapping("/host")
+    public ResponseEntity<ResponseData<PageResponse<HostBookingResponse>>> getBookingsForHost(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Long hostId = customUserDetails.getUser().getId();
+
+        PageResponse<HostBookingResponse> response = bookingService.getBookingsForHost(hostId, page, size);
+
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách đơn đặt phòng thành công", response));
     }
 }

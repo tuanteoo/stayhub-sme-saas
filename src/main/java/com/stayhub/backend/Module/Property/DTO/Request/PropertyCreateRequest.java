@@ -71,6 +71,16 @@ public record PropertyCreateRequest(
         @Size(max = 5000, message = "Mô tả không được vượt quá 5000 ký tự")
         String description,
 
+        @Schema(description = "Cho phép khách hàng thanh toán phần còn lại khi nhận phòng?", example = "true")
+        @NotNull(message = "Vui lòng cho biết có cho phép thanh toán khi nhận phòng hay không")
+        Boolean isPayAtCheckinAllowed,
+
+        @Schema(description = "Phần trăm đặt cọc yêu cầu (Tối thiểu phải bằng mức hoa hồng của gói cước, tối đa 100%)", example = "20.0")
+        @Min(value = 0, message = "Phần trăm cọc không được âm")
+        @Max(value = 100, message = "Phần trăm cọc không được vượt quá 100%")
+        @Valid
+        Integer depositPercentage,
+
         // ==========================================
         // 5. ĐỊNH GIÁ & THANH TOÁN
         // ==========================================

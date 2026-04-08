@@ -60,9 +60,9 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String submitHostApplication(String email, HostRegistrationWithPropertyRequest request) {
+    public String submitHostApplication(Long hostId, HostRegistrationWithPropertyRequest request) {
 
-        User currentUser = userRepository.findByEmail(email)
+        User currentUser = userRepository.findById(hostId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản người dùng!"));
 
         HostDetail hostDetail = hostDetailRepository.findById(currentUser.getId())
@@ -87,7 +87,7 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
         hostDetail.setOnboardingStatus(HostOnboardingStatus.PENDING_REVIEW);
         hostDetailRepository.save(hostDetail);
 
-        propertyService.createProperty(email, request.firstProperty());
+        propertyService.createProperty(hostId, request.firstProperty());
 
         return hostDetail.getHostCode();
     }

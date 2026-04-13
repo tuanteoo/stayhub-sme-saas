@@ -13,7 +13,7 @@ public record SubscriptionPlanResponse(
         BigDecimal price,
         Integer durationMonths,
         Integer maxListings,
-        Double commissionRate,
+        BigDecimal commissionRate,
         BigDecimal creditLimit
 ) {
 }

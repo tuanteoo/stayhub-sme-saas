@@ -41,8 +41,8 @@ public class SubscriptionPlan extends AbstractEntity {
     @Column(name = "max_listings")
     private Integer maxListings;
 
-    @Column(name = "commission_rate")
-    private Double commissionRate;
+    @Column(name = "commission_rate", precision = 5, scale = 2)
+    private BigDecimal commissionRate;
 
     @Column(name = "credit_limit", nullable = false)
     private BigDecimal creditLimit;

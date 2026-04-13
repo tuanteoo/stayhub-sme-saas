@@ -1,12 +1,10 @@
 package com.stayhub.backend.Module.Booking.Service.Implement;
 
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
+import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
-import com.stayhub.backend.Common.Util.BookingPaymentOption;
-import com.stayhub.backend.Common.Util.BookingStatus;
-import com.stayhub.backend.Common.Util.PaginationUtil;
-import com.stayhub.backend.Common.Util.PropertyStatus;
+import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
 import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.GuestBookingResponse;
@@ -17,13 +15,11 @@ import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Booking.Service.BookingService;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
-import com.stayhub.backend.Module.Property.Model.Property;
-import com.stayhub.backend.Module.Property.Model.PropertyImage;
-import com.stayhub.backend.Module.Property.Model.Room;
-import com.stayhub.backend.Module.Property.Model.RoomAvailability;
+import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.PropertyRepository;
 import com.stayhub.backend.Module.Property.Repository.RoomAvailabilityRepository;
 import com.stayhub.backend.Module.Property.Repository.RoomRepository;
+import com.stayhub.backend.Module.Property.Repository.UserSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -53,6 +49,7 @@ public class BookingServiceImpl implements BookingService {
     private final PropertyRepository propertyRepository;
     private final RoomRepository roomRepository;
     private final RoomAvailabilityRepository roomAvailabilityRepository;
+    private final UserSubscriptionRepository userSubscriptionRepository;
 
 
     @Transactional(rollbackFor = Exception.class)
@@ -63,6 +60,10 @@ public class BookingServiceImpl implements BookingService {
 
         Property property = propertyRepository.findById(request.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở trong hệ thống"));
+
+        if (property.getHost().getId().equals(guest.getId())) {
+            throw new InvalidDataException("Hành vi không hợp lệ: Bạn không thể tự đặt chỗ ở của chính mình!");
+        }
 
         if (!PropertyStatus.PUBLISHED.equals(property.getStatus())){
             throw new InvalidDataException("Bài đăng này chưa được duyệt hoặc đã bị gỡ xuống. Vui lòng chọn chỗ ở khác!");
@@ -186,6 +187,20 @@ public class BookingServiceImpl implements BookingService {
             isFullyPaid = true;
         }
 
+        UserSubscription hostSubscription = userSubscriptionRepository.findFirstByUser_IdAndStatusOrderByStartDateDesc(
+                property.getHost().getId(),
+                UserSubscriptionStatus.ACTIVE
+        ).orElseThrow(() -> new InvalidDataException("Chủ nhà hiện không có gói đăng ký hợp lệ, không thể nhận đơn đặt phòng."));
+
+        BigDecimal rawPercentage = hostSubscription.getCurrentCommissionRate();
+        if (rawPercentage == null) {
+            throw new ResourceNotFoundException("Lỗi hệ thống: Không tìm thấy tỷ lệ hoa hồng cho chủ nhà.");
+        }
+        BigDecimal commissionRate = rawPercentage.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+
+        BigDecimal platformCommissionAmount = finalAmount.multiply(commissionRate).setScale(0, RoundingMode.HALF_UP);
+
+
         // =========================================================================================
         // BƯỚC 5: LƯU ĐƠN ĐẶT PHÒNG VÀO DATABASE
         // =========================================================================================
@@ -208,6 +223,7 @@ public class BookingServiceImpl implements BookingService {
                 .depositPercentage(appliedDepositPercentage)
                 .depositAmount(depositAmount)
                 .remainingAmount(remainingAmount)
+                .platformCommission(platformCommissionAmount)
                 .cancellationPolicy(property.getCancellationPolicy())
 
                 .status(BookingStatus.AWAITING_PAYMENT)
@@ -274,7 +290,7 @@ public class BookingServiceImpl implements BookingService {
     public void releaseBookingInternal(Booking booking, BookingStatus targetStatus, Long cancelledBy) {
         booking.setStatus(targetStatus);
 
-        if (targetStatus == BookingStatus.CANCELLED) {
+        if (targetStatus == BookingStatus.CANCELLED || targetStatus == BookingStatus.EXPIRED || targetStatus == BookingStatus.REJECTED) {
             booking.setCancelledAt(LocalDateTime.now());
             booking.setCancelledBy(cancelledBy);
         }

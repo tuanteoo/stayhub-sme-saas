@@ -26,10 +26,6 @@ public class BookingRoom {
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
-    @Column(name = "num_guests")
-    @Builder.Default
-    private Integer numGuests = 1;
-
     @Column(name = "price_at_booking", nullable = false, precision = 15, scale = 2)
     private BigDecimal priceAtBooking;
 }

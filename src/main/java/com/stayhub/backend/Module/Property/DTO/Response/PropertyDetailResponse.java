@@ -32,8 +32,9 @@ public record PropertyDetailResponse(
 
         BigDecimal cleaningFee,
         Integer weekendSurchargePercentage,
-        Integer depositPercentage,
         Boolean isPayAtCheckinAllowed,
+        Integer depositPercentage,
+        CancellationPolicyResponse cancellationPolicyResponse,
 
         String checkInAfter,
         String checkInBefore,

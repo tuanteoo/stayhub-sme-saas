@@ -145,6 +145,10 @@ public class Property {
     @Builder.Default
     private Boolean isPartyAllowed = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cancellation_policy_id")
+    private CancellationPolicy cancellationPolicy;
+
     // ==========================================
     // THỐNG KÊ ĐÁNH GIÁ (Dùng để hiển thị ngoài Card)
     // ==========================================

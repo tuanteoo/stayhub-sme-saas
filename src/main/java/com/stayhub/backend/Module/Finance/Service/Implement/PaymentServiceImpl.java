@@ -1,9 +1,10 @@
-package com.stayhub.backend.Common.Service.Implement;
+package com.stayhub.backend.Module.Finance.Service.Implement;
 
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Service.EmailService;
-import com.stayhub.backend.Common.Service.PaymentService;
+import com.stayhub.backend.Module.Booking.Service.BookingService;
+import com.stayhub.backend.Module.Finance.Service.PaymentService;
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
 import com.stayhub.backend.Config.VNPayConfig;
@@ -33,6 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final EmailService emailService;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionService subscriptionService;
+    private final BookingService bookingService;
 
     @Value("${vnpay.tmn-code}")
     private String vnp_TmnCode;
@@ -191,9 +193,8 @@ public class PaymentServiceImpl implements PaymentService {
                 booking.setStatus(BookingStatus.PARTIALLY_PAID);
             }
         } else {
-            booking.setStatus(BookingStatus.CANCELLED);
             booking.setCancellationReason("Thanh toán VNPAY thất bại hoặc khách hàng hủy giao dịch");
-            roomAvailabilityRepository.releaseRoomsByBooking(booking);
+            bookingService.releaseBookingInternal(booking, BookingStatus.CANCELLED, booking.getUser().getId());
         }
 
         bookingRepository.save(booking);

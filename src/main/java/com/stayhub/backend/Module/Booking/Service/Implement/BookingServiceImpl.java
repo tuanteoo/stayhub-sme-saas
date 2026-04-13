@@ -6,6 +6,7 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
 import com.stayhub.backend.Common.Util.PaginationUtil;
+import com.stayhub.backend.Common.Util.PropertyStatus;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
 import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.GuestBookingResponse;
@@ -35,6 +36,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,13 +58,15 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public String createBooking(BookingCreateRequest request, Long id) {
-        // BƯỚC 1: LẤY THÔNG TIN VÀ KIỂM TRA NGHIỆP VỤ CƠ BẢN
-        // =========================================================================================
         User guest = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng trong hệ thống"));
 
         Property property = propertyRepository.findById(request.propertyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở trong hệ thống"));
+
+        if (!PropertyStatus.PUBLISHED.equals(property.getStatus())){
+            throw new InvalidDataException("Bài đăng này chưa được duyệt hoặc đã bị gỡ xuống. Vui lòng chọn chỗ ở khác!");
+        }
 
         long totalNights = ChronoUnit.DAYS.between(request.checkInDate(), request.checkOutDate());
         if (totalNights <= 0) {
@@ -70,7 +74,6 @@ public class BookingServiceImpl implements BookingService {
         }
 
         List<Long> requestedRoomIds = request.roomIds();
-
         List<Room> rooms = roomRepository.findAllById(requestedRoomIds);
 
         if (rooms.size() != requestedRoomIds.size()) {
@@ -103,8 +106,7 @@ public class BookingServiceImpl implements BookingService {
             throw new InvalidDataException("Chỗ ở chưa được Host thiết lập lịch cho khoảng thời gian này!");
         }
 
-        // Kiểm tra xem có ngày nào bị khóa bởi đơn đặt phòng khác chưa
-        boolean isAnyDayBooked = availabilities.stream().anyMatch(a -> !a.getIsAvailable());
+        boolean isAnyDayBooked = availabilities.stream().anyMatch(a -> !Boolean.TRUE.equals(a.getIsAvailable()));
         if (isAnyDayBooked) {
             throw new InvalidDataException("Rất tiếc, phòng vừa được khách khác đặt nhanh tay hơn. Vui lòng chọn ngày khác!");
         }
@@ -112,8 +114,6 @@ public class BookingServiceImpl implements BookingService {
         // =========================================================================================
         // BƯỚC 3: KIỂM TRA TỔNG SỨC CHỨA VÀ TÍNH TOÁN TIỀN PHÒNG
         // =========================================================================================
-
-        // KIỂM TRA SỨC CHỨA
         int totalCapacity = rooms.stream().mapToInt(Room::getMaxGuests).sum();
         if (request.totalGuests() > totalCapacity) {
             throw new InvalidDataException("Tổng số khách (" + request.totalGuests() + " người) vượt quá sức chứa tối đa của các phòng đã chọn (" + totalCapacity + " người).");
@@ -122,7 +122,6 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal totalRoomPrice = BigDecimal.ZERO;
         List<BookingRoom> bookingRooms = new ArrayList<>();
 
-        // Phân tích số đêm cuối tuần (Thứ 6, Thứ 7) và số đêm thường
         long weekendNights = 0;
         long weekdayNights = 0;
         for (LocalDate date = request.checkInDate(); date.isBefore(request.checkOutDate()); date = date.plusDays(1)) {
@@ -133,11 +132,9 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        // Lấy % phụ thu cuối tuần
         int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
         BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-        // Tính tiền (Chỉ dựa vào giá phòng và số đêm, KHÔNG NHÂN VỚI SỐ NGƯỜI)
         for (Room room : rooms) {
             BigDecimal basePrice = room.getPricePerNight();
             BigDecimal weekendPrice = basePrice.multiply(surchargeMultiplier);
@@ -149,7 +146,6 @@ public class BookingServiceImpl implements BookingService {
 
             bookingRooms.add(BookingRoom.builder()
                     .room(room)
-                    .numGuests(1)
                     .priceAtBooking(basePrice)
                     .build());
         }
@@ -157,33 +153,43 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal cleaningFee = property.getCleaningFee() != null ? property.getCleaningFee() : BigDecimal.ZERO;
         BigDecimal discountAmount = BigDecimal.ZERO;
 
-        // TỔNG TIỀN KHÁCH PHẢI TRẢ (Tiền phòng + Dọn dẹp - Giảm giá)
         BigDecimal finalAmount = totalRoomPrice.add(cleaningFee).subtract(discountAmount);
 
         // =========================================================================================
-        // BƯỚC 4: TÍNH TOÁN SỐ TIỀN ĐẶT CỌC (DEPOSIT)
+        // BƯỚC 4: TÍNH TOÁN SỐ TIỀN ĐẶT CỌC / THANH TOÁN (LUÔN > 0)
         // =========================================================================================
-        BigDecimal depositAmount = finalAmount;
-        BigDecimal remainingAmount = BigDecimal.ZERO;
+        BigDecimal depositAmount;
+        BigDecimal remainingAmount;
+        boolean isFullyPaid = false;
+        int appliedDepositPercentage = 100;
 
         if (request.paymentOption() == BookingPaymentOption.PAY_AT_CHECKIN) {
-            if (!property.getIsPayAtCheckinAllowed()) {
-                throw new InvalidDataException("Chỗ ở này không cho phép thanh toán tại chỗ");
+            if (!Boolean.TRUE.equals(property.getIsPayAtCheckinAllowed())) {
+                throw new InvalidDataException("Chỗ ở này không cho phép thanh toán tại chỗ. Vui lòng chọn thanh toán toàn bộ.");
             }
-            int depositPercentage = property.getDepositPercentage() != null ? property.getDepositPercentage() : 0;
-            depositAmount = finalAmount.multiply(BigDecimal.valueOf(depositPercentage)).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+            Integer configPercentage = property.getDepositPercentage();
+            appliedDepositPercentage = configPercentage != null ? configPercentage : 100;
+
+            BigDecimal depositRatio = BigDecimal.valueOf(appliedDepositPercentage).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+
+            depositAmount = finalAmount.multiply(depositRatio).setScale(0, RoundingMode.HALF_UP);
             remainingAmount = finalAmount.subtract(depositAmount);
+        } else {
+            depositAmount = finalAmount;
+            remainingAmount = BigDecimal.ZERO;
+        }
+
+        if (depositAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidDataException("Số tiền cần thanh toán không hợp lệ (Phải lớn hơn 0đ)!");
+        } else if (depositAmount.compareTo(finalAmount) == 0) {
+            isFullyPaid = true;
         }
 
         // =========================================================================================
         // BƯỚC 5: LƯU ĐƠN ĐẶT PHÒNG VÀO DATABASE
         // =========================================================================================
-        // Sinh mã đơn (Ví dụ: BKG-8A9B2C)
         String bookingCode = "SHB-" + UUID.randomUUID().toString().substring(0,8).toUpperCase();
-
-        BookingStatus initialStatus = (depositAmount.compareTo(BigDecimal.ZERO) == 0)
-                ? BookingStatus.CONFIRMED
-                : BookingStatus.AWAITING_PAYMENT;
 
         Booking booking = Booking.builder()
                 .bookingCode(bookingCode)
@@ -193,14 +199,19 @@ public class BookingServiceImpl implements BookingService {
                 .checkOutDate(request.checkOutDate())
                 .totalNights((int) totalNights)
                 .totalGuests(request.totalGuests())
+
                 .totalPrice(totalRoomPrice)
                 .cleaningFee(cleaningFee)
                 .discountAmount(discountAmount)
+
                 .paymentOption(request.paymentOption())
-                .depositPercentage(request.paymentOption() == BookingPaymentOption.PAY_IN_FULL ? 100 : property.getDepositPercentage())
+                .depositPercentage(appliedDepositPercentage)
                 .depositAmount(depositAmount)
                 .remainingAmount(remainingAmount)
-                .status(initialStatus)
+                .cancellationPolicy(property.getCancellationPolicy())
+
+                .status(BookingStatus.AWAITING_PAYMENT)
+                .isFullyPaid(isFullyPaid)
                 .note(request.note())
                 .build();
 
@@ -216,6 +227,7 @@ public class BookingServiceImpl implements BookingService {
             a.setBooking(booking);
         }
         roomAvailabilityRepository.saveAll(availabilities);
+
         return booking.getBookingCode();
     }
 
@@ -255,6 +267,31 @@ public class BookingServiceImpl implements BookingService {
                 bookingPage.getTotalElements(),
                 bookingResponses
         );
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void releaseBookingInternal(Booking booking, BookingStatus targetStatus, Long cancelledBy) {
+        booking.setStatus(targetStatus);
+
+        if (targetStatus == BookingStatus.CANCELLED) {
+            booking.setCancelledAt(LocalDateTime.now());
+            booking.setCancelledBy(cancelledBy);
+        }
+
+        bookingRepository.save(booking);
+
+        List<RoomAvailability> availabilities = roomAvailabilityRepository.findByBooking_Id(booking.getId());
+
+        for (RoomAvailability availability : availabilities) {
+            availability.setIsAvailable(true);
+            availability.setBooking(null);
+        }
+
+        roomAvailabilityRepository.saveAll(availabilities);
+
+        log.info("Đã chuyển đơn {} sang trạng thái {} và giải phóng {} ngày phòng. Người tác động: {}",
+                booking.getBookingCode(), targetStatus, availabilities.size(), cancelledBy == null ? "SYSTEM" : cancelledBy);
     }
 
     private HostBookingResponse mapToHostBookingResponse(Booking booking) {

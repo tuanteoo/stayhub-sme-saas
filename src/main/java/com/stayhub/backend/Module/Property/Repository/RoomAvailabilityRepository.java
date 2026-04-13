@@ -19,6 +19,8 @@ public interface RoomAvailabilityRepository extends JpaRepository<RoomAvailabili
     @Query("UPDATE RoomAvailability r SET r.isAvailable = false WHERE r.date < :today AND r.isAvailable = true")
     void lockPastDates(@Param("today") LocalDate today);
 
+    List<RoomAvailability> findByBooking_Id(Long bookingId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ra FROM RoomAvailability ra WHERE ra.room.id IN :roomIds AND ra.date >= :checkInDate AND ra.date < :checkOutDate ORDER BY ra.id ASC")
     List<RoomAvailability> findAndLockAvailabilities(

@@ -4,6 +4,7 @@ import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
+import com.stayhub.backend.Common.Mapper.CancellationPolicyMapper;
 import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
@@ -32,6 +33,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.math.RoundingMode.HALF_UP;
+
 @Service
 @RequiredArgsConstructor
 public class PropertyServiceImpl implements PropertyService {
@@ -42,6 +45,8 @@ public class PropertyServiceImpl implements PropertyService {
     private final RentalTypeRepository rentalTypeRepository;
     private final AmenityRepository amenityRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private final CancellationPolicyRepository cancellationPolicyRepository;
+    private final CancellationPolicyMapper cancellationPolicyMapper;
     private final RoomMapper roomMapper;
 
     @Override
@@ -58,11 +63,26 @@ public class PropertyServiceImpl implements PropertyService {
             throw new AppException(ErrorCode.HOST_NOT_APPROVED);
         }
 
+        UserSubscription userSubscription = userSubscriptionRepository.findFirstByUser_IdAndStatusOrderByStartDateDesc(currentUser.getId(), UserSubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new InvalidDataException("Bạn chưa có gói đăng ký hoạt động. Vui lòng đăng ký gói cước để tạo chỗ ở."));
+
+        long currentPropertyCount = propertyRepository.countByHostId(currentUser.getId());
+
+        Integer maxListings = userSubscription.getCurrentMaxListings();
+        if (maxListings != null && currentPropertyCount >= maxListings) {
+            throw new InvalidDataException(
+                    String.format("Bạn đã đạt giới hạn tạo tối đa %d chỗ ở của gói cước hiện tại. Vui lòng nâng cấp gói cước để tiếp tục đăng bài.", maxListings)
+            );
+        }
+
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục nhà!"));
 
         RentalType rentalType = rentalTypeRepository.findById(request.rentalTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại hình cho thuê!"));
+
+        CancellationPolicy cancellationPolicy = cancellationPolicyRepository.findById(request.cancellationPolicyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chính sách hủy!"));
 
         int finalRoomCount = 1;
         if ("toan-bo-cho-o".equals(rentalType.getSlug())) {
@@ -81,8 +101,12 @@ public class PropertyServiceImpl implements PropertyService {
         }
 
         boolean isPayAtCheckin = Boolean.TRUE.equals(request.isPayAtCheckinAllowed());
-        UserSubscription userSubscription = userSubscriptionRepository.findFirstByUser_IdAndStatusOrderByStartDateDesc(currentUser.getId(), UserSubscriptionStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký hoạt động nào cho người dùng!"));
+        int minRequiredDeposit = 100 - cancellationPolicy.getRefundPercentage();
+
+        if (isPayAtCheckin && cancellationPolicy.getId() == 3) {
+            throw new InvalidDataException("Chính sách hủy 'Nghiêm ngặt' không hỗ trợ thanh toán khi nhận phòng để đảm bảo an toàn dòng tiền.");
+        }
+
         Integer finalDepositPercentage = 100;
 
         if (isPayAtCheckin) {
@@ -91,13 +115,15 @@ public class PropertyServiceImpl implements PropertyService {
                 throw new InvalidDataException("Vui lòng thiết lập phần trăm cọc khi cho phép thanh toán tại chỗ.");
             }
 
-            if (requestedDeposit < userSubscription.getCurrentCommissionRate() || requestedDeposit > 100.0) {
+            if (requestedDeposit < minRequiredDeposit || requestedDeposit > 100) {
                 throw new InvalidDataException(
-                        String.format("Để đảm bảo thanh toán, phần trăm cọc tối thiểu phải bằng %s%% (Mức hoa hồng hiện tại của bạn) và tối đa là 100%%.", userSubscription.getCurrentCommissionRate())
+                        String.format("Với chính sách '%s', mức cọc tối thiểu phải là %d%% để đảm bảo an toàn dòng tiền khi khách hủy phòng.",
+                                cancellationPolicy.getName(), minRequiredDeposit)
                 );
             }
             finalDepositPercentage = requestedDeposit;
-        }else {
+
+        } else {
             if (request.depositPercentage() != null) {
                 throw new InvalidDataException("Không được nhập phần trăm cọc khi bạn đã yêu cầu khách thanh toán toàn bộ (Không cho phép thanh toán tại chỗ).");
             }
@@ -118,6 +144,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .slug(SlugUtils.toSlug(request.name() + "-" + System.currentTimeMillis()))
                 .isPayAtCheckinAllowed(request.isPayAtCheckinAllowed())
                 .depositPercentage(finalDepositPercentage)
+                .cancellationPolicy(cancellationPolicy)
                 .weekendSurchargePercentage(request.weekendSurchargePercentage())
                 .cleaningFee(request.cleaningFee())
                 .roomCount(finalRoomCount)
@@ -350,7 +377,7 @@ public class PropertyServiceImpl implements PropertyService {
 
         // Lấy hệ số phụ thu cuối tuần của Property
         int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
-        BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, HALF_UP);
 
         List<RoomResponse> roomResponses = property.getRooms().stream().map(room -> {
             RoomResponse baseResponse = roomMapper.toResponse(room);
@@ -374,14 +401,22 @@ public class PropertyServiceImpl implements PropertyService {
             }
 
             return new RoomResponse(
-                    baseResponse.id(), baseResponse.name(), baseResponse.description(),
-                    baseResponse.pricePerNight(), baseResponse.maxGuests(), baseResponse.numBeds(),
-                    baseResponse.numBathrooms(), baseResponse.amenities(), baseResponse.thumbnailUrl(),
-                    baseResponse.cancellationPolicyResponse(), baseResponse.blockedDates(),
+                    baseResponse.id(),
+                    baseResponse.name(),
+                    baseResponse.description(),
+                    baseResponse.pricePerNight(),
+                    baseResponse.maxGuests(),
+                    baseResponse.numBeds(),
+                    baseResponse.numBathrooms(),
+                    baseResponse.amenities(),
+                    baseResponse.thumbnailUrl(),
+                    baseResponse.blockedDates(),
                     calculatedTotalPrice,
                     priceBreakdown
             );
         }).toList();
+
+        CancellationPolicyResponse policyResponse = cancellationPolicyMapper.toResponse(property.getCancellationPolicy());
 
         return PropertyDetailResponse.builder()
                 .id(property.getId())
@@ -403,8 +438,9 @@ public class PropertyServiceImpl implements PropertyService {
 
                 .cleaningFee(property.getCleaningFee())
                 .weekendSurchargePercentage(property.getWeekendSurchargePercentage())
-                .depositPercentage(property.getDepositPercentage())
                 .isPayAtCheckinAllowed(property.getIsPayAtCheckinAllowed())
+                .depositPercentage(property.getDepositPercentage())
+                .cancellationPolicyResponse(policyResponse)
 
                 .checkInAfter(property.getCheckinAfter())
                 .checkInBefore(property.getCheckinBefore())
@@ -436,7 +472,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở"));
 
         int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
-        BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, HALF_UP);
 
         return property.getRooms().stream().map(room -> {
             BigDecimal calculatedTotalPrice = BigDecimal.ZERO;
@@ -452,7 +488,6 @@ public class PropertyServiceImpl implements PropertyService {
                 priceBreakdown.add(new DailyPriceDTO(availability.getDate(), dailyPrice));
                 calculatedTotalPrice = calculatedTotalPrice.add(dailyPrice);
             }
-
             return new RoomPriceResponse(room.getId(), calculatedTotalPrice, priceBreakdown);
         }).toList();
     }

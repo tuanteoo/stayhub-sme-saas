@@ -3,6 +3,7 @@ package com.stayhub.backend.Module.Booking.Service.Implement;
 import com.stayhub.backend.Common.Util.BookingStatus;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
+import com.stayhub.backend.Module.Booking.Service.BookingService;
 import com.stayhub.backend.Module.Property.Repository.RoomAvailabilityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import java.util.List;
 public class BookingCleanupService {
     private final BookingRepository bookingRepository;
     private final RoomAvailabilityRepository roomAvailabilityRepository;
+    private final BookingService bookingService;
 
     @Scheduled(fixedRate = 60000)
     @Transactional
@@ -31,11 +33,8 @@ public class BookingCleanupService {
             log.info("Tìm thấy {} đơn đặt phòng quá 15 phút chưa thanh toán...", expiredBookings.size());
 
             for (Booking booking : expiredBookings) {
-                booking.setStatus(BookingStatus.EXPIRED);
                 booking.setCancellationReason("Hết hạn thanh toán (Quá 15 phút không hoàn tất)");
-                bookingRepository.save(booking);
-
-                roomAvailabilityRepository.releaseRoomsByBooking(booking);
+                bookingService.releaseBookingInternal(booking, BookingStatus.EXPIRED, null);
 
                 log.info("Đã đánh dấu hết hạn đơn hàng: {}", booking.getBookingCode());
             }

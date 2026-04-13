@@ -11,15 +11,15 @@ public record PropertyCreateRequest(
         // ==========================================
         // 1. TỔNG QUAN & LOẠI HÌNH
         // ==========================================
-        @Schema(description = "ID của hình thức cho thuê (Ví dụ: 1 = Nguyên căn, 2 = Phòng riêng)", example = "1")
+        @Schema(description = "ID của hình thức cho thuê - rental_types", example = "1")
         @NotNull(message = "Vui lòng chọn hình thức cho thuê (Rental Type)")
         Long rentalTypeId,
 
-        @Schema(description = "ID của loại hình chỗ ở (Ví dụ: 1 = Homestay, 2 = Villa, 3 = Khách sạn)", example = "2")
+        @Schema(description = "ID của loại hình chỗ ở - categories - rental_type_categories", example = "2")
         @NotNull(message = "Vui lòng chọn danh mục nhà (Category)")
         Long categoryId,
 
-        @Schema(description = "Danh sách ID các tiện ích có trong nhà (Ví dụ: 1=Wifi, 2=Hồ bơi, 3=TV)", example = "[1, 2, 5, 8, 12]")
+        @Schema(description = "Danh sách ID các tiện ích - amenities", example = "[1, 2, 5, 8, 12]")
         @NotEmpty(message = "Vui lòng chọn ít nhất 1 tiện ích")
         List<Long> amenityIds,
 
@@ -71,12 +71,17 @@ public record PropertyCreateRequest(
         @Size(max = 5000, message = "Mô tả không được vượt quá 5000 ký tự")
         String description,
 
+
+        @NotNull(message = "Vui lòng chọn chính sách hủy đặt phòng")
+        @Schema(description = "ID của chính sách hủy đặt phòng - cancellation_policies")
+        Long cancellationPolicyId,
+
         @Schema(description = "Cho phép khách hàng thanh toán phần còn lại khi nhận phòng?", example = "true")
         @NotNull(message = "Vui lòng cho biết có cho phép thanh toán khi nhận phòng hay không")
         Boolean isPayAtCheckinAllowed,
 
         @Schema(description = "Phần trăm đặt cọc yêu cầu (Tối thiểu phải bằng mức hoa hồng của gói cước, tối đa 100%)", example = "20.0")
-        @Min(value = 0, message = "Phần trăm cọc không được âm")
+        @Min(value = 30, message = "Phần trăm cọc chưa đạt mức tối thiểu của chinh sách")
         @Max(value = 100, message = "Phần trăm cọc không được vượt quá 100%")
         @Valid
         Integer depositPercentage,

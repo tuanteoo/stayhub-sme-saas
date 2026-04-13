@@ -1,7 +1,7 @@
-package com.stayhub.backend.Common.Controller;
+package com.stayhub.backend.Module.Finance.Controller;
 
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
-import com.stayhub.backend.Common.Service.PaymentService;
+import com.stayhub.backend.Module.Finance.Service.PaymentService;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -16,7 +16,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RoomMapper {
     private final AmenityMapper amenityMapper;
-    private final CancellationPolicyMapper cancellationPolicyMapper;
 
     public RoomResponse toResponse(Room room) {
         if (room == null) return null;
@@ -31,7 +30,6 @@ public class RoomMapper {
                 .findFirst()
                 .orElse(null);
 
-        CancellationPolicyResponse policyResponse = cancellationPolicyMapper.toResponse(room.getCancellationPolicy());
 
         LocalDate today = LocalDate.now();
         List<LocalDate> blockedDates = room.getAvailabilities().stream()
@@ -49,7 +47,6 @@ public class RoomMapper {
                 room.getNumBathrooms(),
                 roomAmenities,
                 thumbnailUrl,
-                policyResponse,
                 blockedDates,
                 null,
                 null

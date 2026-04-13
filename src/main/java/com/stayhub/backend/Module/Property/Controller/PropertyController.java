@@ -5,6 +5,7 @@ import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
+import com.stayhub.backend.Module.Property.Service.CancellationPolicyService;
 import com.stayhub.backend.Module.Property.Service.CategoryService;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import com.stayhub.backend.Module.Property.Service.SubscriptionService;
@@ -31,6 +32,7 @@ public class PropertyController {
     private final PropertyService propertyService;
     private final CategoryService categoryService;
     private final SubscriptionService subscriptionService;
+    private final CancellationPolicyService cancellationPolicyService;
 
     @PreAuthorize("hasAuthority('ROLE_HOST')")
     @Operation(summary = "HOST - Tạo bài đăng",
@@ -138,5 +140,21 @@ public class PropertyController {
         java.util.List<SubscriptionPlanResponse> response = subscriptionService.getActiveSubscriptionPlans();
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách gói cước thành công", response));
+    }
+
+    @GetMapping("host/cancellation-policy")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @Operation(summary = "HOST - Lấy danh sách chính sách hủy hoạt động")
+    public ResponseEntity<ResponseData<List<CancellationPolicyResponse>>> getActivePolicies() {
+
+        List<CancellationPolicyResponse> data = cancellationPolicyService.getActivePolicies();
+
+        ResponseData<List<CancellationPolicyResponse>> response = new ResponseData<>(
+                HttpStatus.OK.value(),
+                "Lấy danh sách chính sách hủy thành công",
+                data
+        );
+
+        return ResponseEntity.ok(response);
     }
 }

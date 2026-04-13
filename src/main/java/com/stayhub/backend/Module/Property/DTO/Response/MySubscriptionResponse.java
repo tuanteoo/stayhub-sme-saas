@@ -12,7 +12,7 @@ public record MySubscriptionResponse(
         SubscriptionTier tier,
         String planName,
         Integer maxListings,
-        Double commissionRate,
+        BigDecimal commissionRate,
         BigDecimal creditLimit,
         LocalDateTime startDate,
         LocalDateTime endDate,

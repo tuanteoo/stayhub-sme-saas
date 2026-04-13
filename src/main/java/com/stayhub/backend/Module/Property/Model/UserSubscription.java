@@ -43,8 +43,8 @@ public class UserSubscription {
     @Column(name = "auto_renew")
     private Boolean autoRenew;
 
-    @Column(name = "current_commission_rate")
-    private Double currentCommissionRate;
+    @Column(name = "current_commission_rate", precision = 5, scale = 2)
+    private BigDecimal currentCommissionRate;
 
     @Column(name = "current_max_listings")
     private Integer currentMaxListings;

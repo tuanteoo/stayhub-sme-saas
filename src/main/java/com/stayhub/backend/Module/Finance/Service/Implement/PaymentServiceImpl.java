@@ -4,21 +4,30 @@ import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Service.EmailService;
 import com.stayhub.backend.Module.Booking.Service.BookingService;
+import com.stayhub.backend.Module.Finance.Model.Payment;
+import com.stayhub.backend.Module.Finance.Repository.PaymentRepository;
 import com.stayhub.backend.Module.Finance.Service.PaymentService;
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
+import com.stayhub.backend.Common.Util.PaymentStatus;
 import com.stayhub.backend.Config.VNPayConfig;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Property.Model.SubscriptionPlan;
-import com.stayhub.backend.Module.Property.Repository.RoomAvailabilityRepository;
 import com.stayhub.backend.Module.Property.Repository.SubscriptionPlanRepository;
 import com.stayhub.backend.Module.Property.Service.SubscriptionService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.net.URLEncoder;
@@ -28,12 +37,16 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentServiceImpl implements PaymentService {
+
     private final BookingRepository bookingRepository;
-    private final RoomAvailabilityRepository roomAvailabilityRepository;
+    private final PaymentRepository paymentRepository;
     private final EmailService emailService;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionService subscriptionService;
+
+    @Lazy
     private final BookingService bookingService;
 
     @Value("${vnpay.tmn-code}")
@@ -53,6 +66,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Value("${vnpay.command}")
     private String vnp_Command;
+
+    @Value("${vnpay.api-url}")
+    private String vnp_ApiUrl;
 
     @Override
     public Map<String, String> processVnPayIpn(HttpServletRequest request) {
@@ -96,15 +112,14 @@ public class PaymentServiceImpl implements PaymentService {
             }
 
             String vnp_TxnRef = request.getParameter("vnp_TxnRef");
-            String orderCode = vnp_TxnRef.split("_")[0];
-            String vnp_ResponseCode = request.getParameter("vnp_ResponseCode");
-            long vnpAmount = Long.parseLong(request.getParameter("vnp_Amount"));
 
-            if (orderCode.startsWith("SHB-")) {
-                return handleBookingPayment(orderCode, vnpAmount, vnp_ResponseCode);
+            if (vnp_TxnRef.startsWith("SHB-")) {
+                return handleBookingPayment(vnp_TxnRef, fields);
             }
-            else if (orderCode.startsWith("SUB-")) {
-                return handleSubscriptionPayment(orderCode, vnpAmount, vnp_ResponseCode);
+            else if (vnp_TxnRef.startsWith("SUB-")) {
+                long vnpAmount = Long.parseLong(request.getParameter("vnp_Amount"));
+                String vnp_ResponseCode = request.getParameter("vnp_ResponseCode");
+                return handleSubscriptionPayment(vnp_TxnRef, vnpAmount, vnp_ResponseCode);
             }
             else {
                 response.put("RspCode", "01");
@@ -113,6 +128,7 @@ public class PaymentServiceImpl implements PaymentService {
             }
 
         } catch (Exception e) {
+            log.error("Lỗi IPN: {}", e.getMessage());
             response.put("RspCode", "99");
             response.put("Message", "Unknown error");
             return response;
@@ -124,19 +140,16 @@ public class PaymentServiceImpl implements PaymentService {
         Booking booking = bookingRepository.findByBookingCode(bookingCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt phòng"));
 
-        // Kiểm tra trạng thái đơn hàng
         if (booking.getStatus() != BookingStatus.AWAITING_PAYMENT) {
             throw new InvalidDataException("Đơn đặt phòng này không ở trạng thái chờ thanh toán!");
         }
 
-        // Kiểm tra tiền cọc
-        BigDecimal amountToPay = booking.getDepositAmount();
-        if (amountToPay == null || amountToPay.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidDataException("Đơn này có số tiền cọc = 0đ, không cần thanh toán qua VNPAY!");
-        }
+        Payment pendingPayment = paymentRepository.findFirstByBooking_IdAndPaymentStatusOrderByCreatedAtDesc(
+                        booking.getId(), PaymentStatus.PENDING)
+                .orElseThrow(() -> new InvalidDataException("Không tìm thấy hồ sơ thanh toán gốc của đơn hàng này."));
 
-        long amount = amountToPay.multiply(BigDecimal.valueOf(100)).longValue();
-        String vnp_TxnRef = bookingCode + "_" + VNPayConfig.getRandomNumber(6);
+        long amount = pendingPayment.getAmount().multiply(BigDecimal.valueOf(100)).longValue();
+        String vnp_TxnRef = pendingPayment.getTransactionRef();
         String vnp_OrderInfo = "Thanh_toan_don_hang_" + bookingCode;
 
         return buildVNPayUrl(amount, vnp_TxnRef, vnp_OrderInfo, request);
@@ -158,45 +171,118 @@ public class PaymentServiceImpl implements PaymentService {
         return buildVNPayUrl(amount, vnp_TxnRef, vnp_OrderInfo, request);
     }
 
-    private Map<String, String> handleBookingPayment(String bookingCode, long vnpAmount, String vnp_ResponseCode) {
+    @Override
+    public boolean refundVnPayTransaction(Payment originalPayment, BigDecimal refundAmount) {
+        log.info("Khởi tạo yêu cầu hoàn tiền sang VNPAY cho GD: {}", originalPayment.getGatewayTransactionNo());
+
+        try {
+            String vnp_RequestId = VNPayConfig.getRandomNumber(8);
+            String vnp_Version = "2.1.0";
+            String vnp_Command = "refund";
+            String vnp_TmnCode = this.vnp_TmnCode;
+
+            // 02: Hoàn tiền toàn phần, 03: Hoàn tiền một phần
+            String vnp_TransactionType = refundAmount.compareTo(originalPayment.getAmount()) == 0 ? "02" : "03";
+
+            String vnp_TxnRef = originalPayment.getTransactionRef();
+            long amount = refundAmount.multiply(new BigDecimal(100)).longValue();
+            String vnp_Amount = String.valueOf(amount);
+            String vnp_OrderInfo = "Hoan tien don hang " + vnp_TxnRef;
+
+            String vnp_TransactionNo = originalPayment.getGatewayTransactionNo() != null ? originalPayment.getGatewayTransactionNo() : "";
+            String vnp_TransactionDate = originalPayment.getPayDate();
+            String vnp_CreateBy = "SYSTEM";
+
+            Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+            String vnp_CreateDate = formatter.format(cld.getTime());
+
+            String vnp_IpAddr = "127.0.0.1";
+
+            // Quy tắc tạo checksum: nối các tham số bằng dấu |
+            String hashData = vnp_RequestId + "|" + vnp_Version + "|" + vnp_Command + "|" + vnp_TmnCode + "|" +
+                    vnp_TransactionType + "|" + vnp_TxnRef + "|" + vnp_Amount + "|" + vnp_TransactionNo + "|" +
+                    vnp_TransactionDate + "|" + vnp_CreateBy + "|" + vnp_CreateDate + "|" + vnp_IpAddr + "|" + vnp_OrderInfo;
+
+            String vnp_SecureHash = VNPayConfig.hmacSHA512(vnp_HashSecret, hashData);
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("vnp_RequestId", vnp_RequestId);
+            payload.put("vnp_Version", vnp_Version);
+            payload.put("vnp_Command", vnp_Command);
+            payload.put("vnp_TmnCode", vnp_TmnCode);
+            payload.put("vnp_TransactionType", vnp_TransactionType);
+            payload.put("vnp_TxnRef", vnp_TxnRef);
+            payload.put("vnp_Amount", vnp_Amount);
+            payload.put("vnp_TransactionNo", vnp_TransactionNo);
+            payload.put("vnp_TransactionDate", vnp_TransactionDate);
+            payload.put("vnp_CreateBy", vnp_CreateBy);
+            payload.put("vnp_CreateDate", vnp_CreateDate);
+            payload.put("vnp_IpAddr", vnp_IpAddr);
+            payload.put("vnp_OrderInfo", vnp_OrderInfo);
+            payload.put("vnp_SecureHash", vnp_SecureHash);
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+            ResponseEntity<Map> response = restTemplate.postForEntity(vnp_ApiUrl, entity, Map.class);
+            Map<String, Object> responseBody = response.getBody();
+
+            if (responseBody != null && "00".equals(responseBody.get("vnp_ResponseCode"))) {
+                log.info("VNPAY báo hoàn tiền THÀNH CÔNG cho đơn: {}", originalPayment.getBooking().getBookingCode());
+                return true;
+            } else {
+                log.error("VNPAY báo hoàn tiền THẤT BẠI: {}", responseBody != null ? responseBody.get("vnp_Message") : "Không có phản hồi");
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi thực hiện hoàn tiền VNPAY: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private Map<String, String> handleBookingPayment(String vnp_TxnRef, Map<String, String> fields) {
         Map<String, String> response = new HashMap<>();
+        long vnpAmount = Long.parseLong(fields.get("vnp_Amount"));
+        String vnp_ResponseCode = fields.get("vnp_ResponseCode");
+        String vnp_TransactionNo = fields.get("vnp_TransactionNo");
+        String vnp_PayDate = fields.get("vnp_PayDate");
 
-        Optional<Booking> optionalBooking = bookingRepository.findByBookingCode(bookingCode);
-        if (optionalBooking.isEmpty()) {
-            response.put("RspCode", "01");
-            response.put("Message", "Order not found");
-            return response;
-        }
+        Payment payment = paymentRepository.findByTransactionRef(vnp_TxnRef)
+                .orElseThrow(() -> new ResourceNotFoundException("Giao dịch không tồn tại"));
 
-        Booking booking = optionalBooking.get();
+        Booking booking = payment.getBooking();
 
-        if (booking.getStatus() != BookingStatus.AWAITING_PAYMENT) {
-            response.put("RspCode", "02");
-            response.put("Message", "Order already confirmed or processed");
-            return response;
-        }
-
-        long expectedAmount = booking.getDepositAmount().multiply(BigDecimal.valueOf(100)).longValue();
+        // Kiểm tra số tiền
+        long expectedAmount = payment.getAmount().multiply(BigDecimal.valueOf(100)).longValue();
         if (vnpAmount != expectedAmount) {
             response.put("RspCode", "04");
             response.put("Message", "Invalid amount");
             return response;
         }
 
+        // Cập nhật thông tin Gateway vào Payment
+        payment.setGatewayTransactionNo(vnp_TransactionNo);
+        payment.setPayDate(vnp_PayDate);
+        payment.setGatewayResponseCode(vnp_ResponseCode);
+        payment.setGatewayPayload(fields.toString());
+
         if ("00".equals(vnp_ResponseCode)) {
+            payment.setPaymentStatus(PaymentStatus.COMPLETED);
             if (booking.getPaymentOption() == BookingPaymentOption.PAY_IN_FULL) {
                 booking.setStatus(BookingStatus.CONFIRMED);
-
-                User guest = booking.getUser();
-                emailService.sendBookingReceiptEmail(guest.getEmail(),guest.getProfile().getFullName(), booking);
+                emailService.sendBookingReceiptEmail(booking.getUser().getEmail(), booking.getUser().getProfile().getFullName(), booking);
             } else {
                 booking.setStatus(BookingStatus.PARTIALLY_PAID);
             }
         } else {
-            booking.setCancellationReason("Thanh toán VNPAY thất bại hoặc khách hàng hủy giao dịch");
+            payment.setPaymentStatus(PaymentStatus.FAILED);
             bookingService.releaseBookingInternal(booking, BookingStatus.CANCELLED, booking.getUser().getId());
         }
 
+        paymentRepository.save(payment);
         bookingRepository.save(booking);
 
         response.put("RspCode", "00");
@@ -206,20 +292,15 @@ public class PaymentServiceImpl implements PaymentService {
 
     private Map<String, String> handleSubscriptionPayment(String orderCode, long vnpAmount, String vnp_ResponseCode) {
         Map<String, String> response = new HashMap<>();
-
         try {
             String[] parts = orderCode.split("-");
             Long hostId = Long.parseLong(parts[1]);
-            Long planId = Long.parseLong(parts[2]);
+            Long planId = Long.parseLong(parts[2].split("_")[0]);
 
-            var optionalPlan = subscriptionPlanRepository.findById(planId);
-            if (optionalPlan.isEmpty()) {
-                response.put("RspCode", "01");
-                response.put("Message", "Plan not found");
-                return response;
-            }
+            SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Gói cước không tồn tại"));
 
-            long expectedAmount = optionalPlan.get().getPrice().multiply(BigDecimal.valueOf(100)).longValue();
+            long expectedAmount = plan.getPrice().multiply(BigDecimal.valueOf(100)).longValue();
             if (vnpAmount != expectedAmount) {
                 response.put("RspCode", "04");
                 response.put("Message", "Invalid amount");
@@ -228,50 +309,33 @@ public class PaymentServiceImpl implements PaymentService {
 
             if ("00".equals(vnp_ResponseCode)) {
                 subscriptionService.processSubscriptionPurchase(hostId, planId);
-            } else {
-                System.out.println("Thanh toán gói cước thất bại cho Host ID: " + hostId);
             }
-
             response.put("RspCode", "00");
             response.put("Message", "Confirm Success");
             return response;
-
         } catch (Exception e) {
             response.put("RspCode", "99");
-            response.put("Message", "Lỗi phân tích mã đơn hàng gói cước");
+            response.put("Message", "Lỗi xử lý gói cước");
             return response;
         }
     }
 
     private String buildVNPayUrl(long amount, String vnp_TxnRef, String vnp_OrderInfo, HttpServletRequest request) {
         Map<String, String> vnp_Params = new HashMap<>();
-        vnp_Params.put("vnp_Version", vnp_Version.trim());
-        vnp_Params.put("vnp_Command", vnp_Command.trim());
-        vnp_Params.put("vnp_TmnCode", vnp_TmnCode.trim());
+        vnp_Params.put("vnp_Version", vnp_Version);
+        vnp_Params.put("vnp_Command", vnp_Command);
+        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
         vnp_Params.put("vnp_Amount", String.valueOf(amount));
         vnp_Params.put("vnp_CurrCode", "VND");
-
-        // Các tham số động truyền vào
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
         vnp_Params.put("vnp_OrderInfo", vnp_OrderInfo);
-
-        vnp_Params.put("vnp_OrderType", "170000");
+        vnp_Params.put("vnp_OrderType", "other");
         vnp_Params.put("vnp_Locale", "vn");
-        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl.trim());
+        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
+        vnp_Params.put("vnp_IpAddr", VNPayConfig.getIpAddress(request));
 
-        // Lấy IP
-        String ipAddr = VNPayConfig.getIpAddress(request);
-        if (ipAddr == null || ipAddr.isEmpty() || ipAddr.contains(":")) {
-            ipAddr = "127.0.0.1";
-        } else if (ipAddr.contains(",")) {
-            ipAddr = ipAddr.split(",")[0].trim();
-        }
-        vnp_Params.put("vnp_IpAddr", ipAddr);
-
-        // Ngày tạo & Hết hạn
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        formatter.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         String vnp_CreateDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
 
@@ -279,35 +343,30 @@ public class PaymentServiceImpl implements PaymentService {
         String vnp_ExpireDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
 
-        // Build chuỗi Hash
-        List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
+        List fieldNames = new ArrayList(vnp_Params.keySet());
         Collections.sort(fieldNames);
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
-
-        try {
-            Iterator<String> itr = fieldNames.iterator();
-            while (itr.hasNext()) {
-                String fieldName = itr.next();
-                String fieldValue = vnp_Params.get(fieldName);
-                if ((fieldValue != null) && (!fieldValue.isEmpty())) {
-                    String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8).replace("+", "%20");
-                    hashData.append(fieldName).append('=').append(encodedValue);
-                    query.append(fieldName).append('=').append(encodedValue);
-                    if (itr.hasNext()) {
-                        query.append('&');
-                        hashData.append('&');
-                    }
+        Iterator itr = fieldNames.iterator();
+        while (itr.hasNext()) {
+            String fieldName = (String) itr.next();
+            String fieldValue = (String) vnp_Params.get(fieldName);
+            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                hashData.append(fieldName);
+                hashData.append('=');
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
+                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII));
+                query.append('=');
+                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
+                if (itr.hasNext()) {
+                    query.append('&');
+                    hashData.append('&');
                 }
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo URL VNPAY", e);
         }
-
         String queryUrl = query.toString();
-        String vnp_SecureHash = VNPayConfig.hmacSHA512(vnp_HashSecret.trim(), hashData.toString());
+        String vnp_SecureHash = VNPayConfig.hmacSHA512(vnp_HashSecret, hashData.toString());
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-
         return vnp_PayUrl + "?" + queryUrl;
     }
 }

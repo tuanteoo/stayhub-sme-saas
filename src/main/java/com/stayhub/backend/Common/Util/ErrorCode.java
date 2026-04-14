@@ -26,7 +26,9 @@ public enum ErrorCode {
     RENTAL_TYPE_NOT_FOUND(1015, "Không tìm thấy loại hình cho thuê", HttpStatus.NOT_FOUND),
     POLICY_NOT_FOUND(1016, "Không tìm thấy chính sách hủy phòng", HttpStatus.NOT_FOUND),
     PASSWORD_EMAIL_WRONG(1017, "Email hoặc mật khẩu không chính xác", HttpStatus.NOT_FOUND),
-    EMAIL_SEND_FAILED(1018, "Gửi email thất bại, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR);
+    EMAIL_SEND_FAILED(1018, "Gửi email thất bại, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    PAYMENT_FAILED(4001, "VNPAY từ chối yêu cầu hoàn tiền. Vui lòng thử lại sau.", HttpStatus.PAYMENT_REQUIRED);
 
     private final int code;
     private final String message;

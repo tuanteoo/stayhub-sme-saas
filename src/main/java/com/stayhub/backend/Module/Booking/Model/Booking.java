@@ -2,6 +2,7 @@ package com.stayhub.backend.Module.Booking.Model;
 
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.BookingStatus;
+import com.stayhub.backend.Module.Finance.Model.Payment;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Property.Model.CancellationPolicy;
 import com.stayhub.backend.Module.Property.Model.Promotion;

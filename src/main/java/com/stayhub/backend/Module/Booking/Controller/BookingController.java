@@ -72,4 +72,22 @@ public class BookingController {
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách chuyến đi thành công", response));
     }
+
+    @Operation(summary = "USER - Hủy đơn đặt phòng")
+    @PutMapping("/guest/cancel/{bookingCode}")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public ResponseEntity<ResponseData<String>> cancelBookingByGuest(
+            @PathVariable String bookingCode,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long guestId = userDetails.getUser().getId();
+
+        String message = bookingService.cancelBookingByGuest(guestId, bookingCode);
+
+        return ResponseEntity.ok(new ResponseData<>(
+                HttpStatus.OK.value(),
+                "Hủy đơn đặt phòng thành công",
+                message
+        ));
+    }
 }

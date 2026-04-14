@@ -52,7 +52,6 @@ public class Property {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // Địa chỉ
     @Column(name = "address_detail")
     private String addressDetail;
     private String ward;

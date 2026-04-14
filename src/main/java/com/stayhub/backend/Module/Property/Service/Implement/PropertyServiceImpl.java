@@ -371,7 +371,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .collect(Collectors.toSet());
 
         int totalGuests = property.getRooms().stream().mapToInt(Room::getMaxGuests).sum();
-        int totalRooms = property.getRooms().size();
+        int totalRooms = property.getRoomCount();
         int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
         int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
 
@@ -548,14 +548,14 @@ public class PropertyServiceImpl implements PropertyService {
                 .orElse(BigDecimal.ZERO);
 
         int totalGuests = property.getRooms().stream().mapToInt(Room::getMaxGuests).sum();
-        int totalRooms = property.getRooms().size();
+        int totalRooms = property.getRoomCount();
         int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
         int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
 
         return new PropertyCardResponse(
                 property.getId(), property.getName(), property.getSlug(),
                 property.getProvince(), property.getDistrict(), startingPrice,
-                thumbnailUrl, property.getRatingAvg(), property.getRoomCount(),
+                thumbnailUrl, property.getRatingAvg(),
                 totalGuests, totalRooms, totalBeds, totalBathrooms,
                 new ArrayList<>(allAmenityNames)
         );

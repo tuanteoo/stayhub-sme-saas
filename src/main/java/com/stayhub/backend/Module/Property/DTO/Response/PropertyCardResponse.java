@@ -12,7 +12,6 @@ public record PropertyCardResponse(
         BigDecimal pricePerNight,
         String thumbnailUrl,
         Double ratingAvg,
-        Integer roomCount,
         Integer maxGuests,
         Integer numBedrooms,
         Integer numBeds,

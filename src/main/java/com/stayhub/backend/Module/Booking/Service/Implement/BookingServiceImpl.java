@@ -26,6 +26,8 @@ import com.stayhub.backend.Module.Property.Repository.RoomRepository;
 import com.stayhub.backend.Module.Property.Repository.UserSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
@@ -55,7 +57,10 @@ public class BookingServiceImpl implements BookingService {
     private final RoomAvailabilityRepository roomAvailabilityRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final PaymentRepository paymentRepository;
-    private final PaymentService paymentService;
+
+    @Lazy
+    @Autowired
+    private PaymentService paymentService;
 
 
     @Transactional(rollbackFor = Exception.class)
@@ -362,23 +367,19 @@ public class BookingServiceImpl implements BookingService {
             return "Hủy đơn hàng thành công.";
         }
 
-        // 3. Trường hợp ĐÃ THANH TOÁN
         Payment originalPayment = paymentRepository.findFirstByBooking_IdAndPaymentStatusOrderByCreatedAtDesc(
                         booking.getId(), PaymentStatus.COMPLETED)
                 .orElseThrow(() -> new InvalidDataException("Không tìm thấy lịch sử thanh toán thành công cho đơn hàng này."));
 
-        // 4. Tính toán tiền hoàn dựa trên Chính sách hủy
         BigDecimal refundAmount = calculateRefundAmount(booking);
 
-        // 5. GỌI API VNPAY HOÀN TIỀN (Chỉ thực hiện khi có tiền cần hoàn)
         if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
             boolean isRefunded = paymentService.refundVnPayTransaction(originalPayment, refundAmount);
 
             if (!isRefunded) {
-                throw new AppException(ErrorCode.PAYMENT_FAILED); // Hoặc ném kèm message nếu class AppException của em hỗ trợ
+                throw new AppException(ErrorCode.PAYMENT_FAILED);
             }
 
-            // Chỉ lưu vết hoàn tiền vào Database khi VNPAY xử lý thành công
             Payment refundPayment = Payment.builder()
                     .booking(booking)
                     .user(booking.getUser())

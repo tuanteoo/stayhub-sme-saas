@@ -80,7 +80,7 @@ public record PropertyCreateRequest(
         @NotNull(message = "Vui lòng cho biết có cho phép thanh toán khi nhận phòng hay không")
         Boolean isPayAtCheckinAllowed,
 
-        @Schema(description = "Phần trăm đặt cọc yêu cầu (Tối thiểu phải bằng mức hoa hồng của gói cước, tối đa 100%)", example = "20.0")
+        @Schema(description = "Phần trăm đặt cọc yêu cầu (Tối thiểu phải bằng mức hoa hồng của gói cước, tối đa 100%)", example = "30.0")
         @Min(value = 30, message = "Phần trăm cọc chưa đạt mức tối thiểu của chinh sách")
         @Max(value = 100, message = "Phần trăm cọc không được vượt quá 100%")
         @Valid
@@ -89,12 +89,12 @@ public record PropertyCreateRequest(
         // ==========================================
         // 5. ĐỊNH GIÁ & THANH TOÁN
         // ==========================================
-        @Schema(description = "Phụ phi cuối tuần (Từ 0 - 100%)", example = "15")
+        @Schema(description = "Phụ phi cuối tuần (Từ 0 - 100%)", example = "10")
         @Min(value = 0, message = "Phụ phí cuối tuần không được âm")
         @Max(value = 100, message = "Phụ phí cuối tuần tối đa là 100%")
         Integer weekendSurchargePercentage,
 
-        @Schema(description = "Phí dọn dẹp (Từ 0 trở lên)", example = "50000")
+        @Schema(description = "Phí dọn dẹp (Từ 0 trở lên)", example = "100000")
         @DecimalMin(value = "0.0", message = "Phí dọn dẹp không được âm")
         BigDecimal cleaningFee,
 

@@ -467,14 +467,28 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public List<RoomPriceResponse> calculatePriceForProperty(String slug, LocalDate checkInDate, LocalDate checkOutDate) {
+    public List<RoomPriceResponse> calculatePriceForProperty(String slug, LocalDate checkInDate, LocalDate checkOutDate, List<Long> roomIds) {
         Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở"));
 
         int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
         BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, HALF_UP);
 
-        return property.getRooms().stream().map(room -> {
+        List<Room> targetRooms;
+        if (roomIds != null && !roomIds.isEmpty()) {
+            targetRooms = property.getRooms().stream()
+                    .filter(room -> roomIds.contains(room.getId()))
+                    .toList();
+
+            if (targetRooms.size() != roomIds.size()) {
+                throw new InvalidDataException("Một hoặc nhiều phòng được chọn không thuộc chỗ ở này!");
+            }
+        }
+        else {
+            targetRooms = property.getRooms();
+        }
+
+        return targetRooms.stream().map(room -> {
             BigDecimal calculatedTotalPrice = BigDecimal.ZERO;
             List<DailyPriceDTO> priceBreakdown = new ArrayList<>();
 
@@ -483,7 +497,7 @@ public class PropertyServiceImpl implements PropertyService {
                     .toList();
 
             for (RoomAvailability availability : availabilities) {
-                BigDecimal dailyPrice = PricingUtils.calculateDailyPrice(room,availability, surchargeMultiplier);
+                BigDecimal dailyPrice = PricingUtils.calculateDailyPrice(room, availability, surchargeMultiplier);
 
                 priceBreakdown.add(new DailyPriceDTO(availability.getDate(), dailyPrice));
                 calculatedTotalPrice = calculatedTotalPrice.add(dailyPrice);

@@ -106,14 +106,15 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy thông tin chi tiết thành công", propertyDetail));
     }
 
-    @Operation(summary = "GUEST_USER - Tính tổng tiền cho đơn đặt phòng dựa trên slug bài đăng, ngày nhận phòng và ngày trả phòng")
+    @Operation(summary = "GUEST_USER - Tính tiền cho phòng đã chọn dựa trên slug bài đăng, ngày nhận phòng và ngày trả phòng")
     @GetMapping("/{slug}/calculate-price")
     public ResponseEntity<ResponseData<List<RoomPriceResponse>>> calculatePriceBySlug(
             @PathVariable String slug,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkInDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate,
+            @RequestParam(required = false) List<Long> roomIds) {
 
-        List<RoomPriceResponse> response = propertyService.calculatePriceForProperty(slug, checkInDate, checkOutDate);
+        List<RoomPriceResponse> response = propertyService.calculatePriceForProperty(slug, checkInDate, checkOutDate, roomIds);
         return ResponseEntity.ok(new ResponseData<>(200, "Tính giá thành công", response));
     }
 

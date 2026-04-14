@@ -4,6 +4,7 @@ import com.stayhub.backend.Module.Property.Model.Room;
 import com.stayhub.backend.Module.Property.Model.RoomAvailability;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 
 public class PricingUtils {
     /**
@@ -15,8 +16,8 @@ public class PricingUtils {
             dailyPrice = availability.getPriceModifier();
         }
 
-        java.time.DayOfWeek day = availability.getDate().getDayOfWeek();
-        if (day == java.time.DayOfWeek.FRIDAY || day == java.time.DayOfWeek.SATURDAY) {
+        DayOfWeek day = availability.getDate().getDayOfWeek();
+        if (day == DayOfWeek.FRIDAY || day == DayOfWeek.SATURDAY) {
             dailyPrice = dailyPrice.multiply(surchargeMultiplier);
         }
 

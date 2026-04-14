@@ -39,7 +39,7 @@ public record RoomCreateRequest(
         @Schema(description = "Danh sách ID các tiện ích có trong phòng này (Ví dụ: 1=Wifi, 2=Hồ bơi, 3=TV)", example = "[1, 2, 5, 8, 12]")
         List<Long> amenityIds,
 
-        @Schema(description = "Danh sách URL hình ảnh của phòng này (Ví dụ: [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"])", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]")
+        @Schema(description = "Danh sách URL hình ảnh của phòng này", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]")
         @NotEmpty(message = "Vui lòng tải lên ít nhất 1 hình ảnh cho phòng này")
         List<String> imageUrls
 ) {

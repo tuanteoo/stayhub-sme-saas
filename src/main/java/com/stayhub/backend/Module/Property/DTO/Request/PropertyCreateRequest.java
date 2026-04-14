@@ -37,7 +37,6 @@ public record PropertyCreateRequest(
         String district,
 
         @Schema(description = "Phường / Xã", example = "Phường 1")
-        @NotBlank(message = "Phường/Xã không được để trống")
         @Size(max = 100, message = "Tên Phường/Xã quá dài")
         String ward,
 

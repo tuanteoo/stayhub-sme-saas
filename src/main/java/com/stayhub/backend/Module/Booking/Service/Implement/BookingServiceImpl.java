@@ -5,6 +5,7 @@ import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
+import com.stayhub.backend.Config.VNPayConfig;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
 import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.GuestBookingResponse;
@@ -13,6 +14,9 @@ import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Model.BookingRoom;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Booking.Service.BookingService;
+import com.stayhub.backend.Module.Finance.Model.Payment;
+import com.stayhub.backend.Module.Finance.Repository.PaymentRepository;
+import com.stayhub.backend.Module.Finance.Service.PaymentService;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.Model.*;
@@ -50,6 +54,8 @@ public class BookingServiceImpl implements BookingService {
     private final RoomRepository roomRepository;
     private final RoomAvailabilityRepository roomAvailabilityRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentService paymentService;
 
 
     @Transactional(rollbackFor = Exception.class)
@@ -244,6 +250,22 @@ public class BookingServiceImpl implements BookingService {
         }
         roomAvailabilityRepository.saveAll(availabilities);
 
+        PaymentPurpose purpose = PaymentPurpose.BOOKING_PAYMENT;
+
+        String uniqueTxnRef = booking.getBookingCode() + "-" + System.currentTimeMillis() + "-";
+
+        Payment payment = Payment.builder()
+                .booking(booking)
+                .user(guest)
+                .amount(booking.getDepositAmount())
+                .paymentMethod(PaymentMethod.VNPAY)
+                .paymentStatus(PaymentStatus.PENDING)
+                .paymentPurpose(purpose)
+                .transactionRef(uniqueTxnRef)
+                .build();
+
+        paymentRepository.save(payment);
+
         return booking.getBookingCode();
     }
 
@@ -310,6 +332,73 @@ public class BookingServiceImpl implements BookingService {
                 booking.getBookingCode(), targetStatus, availabilities.size(), cancelledBy == null ? "SYSTEM" : cancelledBy);
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public String cancelBookingByGuest(Long guestId, String bookingCode) {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt phòng."));
+
+        if (!booking.getUser().getId().equals(guestId)) {
+            throw new InvalidDataException("Bạn không có quyền thao tác trên đơn hàng này.");
+        }
+
+        // 1. SỬA LỖI: Bổ sung thêm trạng thái PARTIALLY_PAID (Đã thanh toán cọc)
+        if (booking.getStatus() != BookingStatus.CONFIRMED
+                && booking.getStatus() != BookingStatus.PARTIALLY_PAID
+                && booking.getStatus() != BookingStatus.AWAITING_PAYMENT) {
+            throw new InvalidDataException("Chỉ có thể hủy đơn hàng đang chờ thanh toán, đã cọc hoặc đã xác nhận.");
+        }
+
+        // 2. Trường hợp CHƯA THANH TOÁN -> Hủy chay
+        if (booking.getStatus() == BookingStatus.AWAITING_PAYMENT) {
+            releaseBookingInternal(booking, BookingStatus.CANCELLED, guestId);
+
+            paymentRepository.findFirstByBooking_IdAndPaymentStatusOrderByCreatedAtDesc(booking.getId(), PaymentStatus.PENDING)
+                    .ifPresent(p -> {
+                        p.setPaymentStatus(PaymentStatus.CANCELLED);
+                        paymentRepository.save(p);
+                    });
+
+            return "Hủy đơn hàng thành công.";
+        }
+
+        // 3. Trường hợp ĐÃ THANH TOÁN
+        Payment originalPayment = paymentRepository.findFirstByBooking_IdAndPaymentStatusOrderByCreatedAtDesc(
+                        booking.getId(), PaymentStatus.COMPLETED)
+                .orElseThrow(() -> new InvalidDataException("Không tìm thấy lịch sử thanh toán thành công cho đơn hàng này."));
+
+        // 4. Tính toán tiền hoàn dựa trên Chính sách hủy
+        BigDecimal refundAmount = calculateRefundAmount(booking);
+
+        // 5. GỌI API VNPAY HOÀN TIỀN (Chỉ thực hiện khi có tiền cần hoàn)
+        if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+            boolean isRefunded = paymentService.refundVnPayTransaction(originalPayment, refundAmount);
+
+            if (!isRefunded) {
+                throw new AppException(ErrorCode.PAYMENT_FAILED); // Hoặc ném kèm message nếu class AppException của em hỗ trợ
+            }
+
+            // Chỉ lưu vết hoàn tiền vào Database khi VNPAY xử lý thành công
+            Payment refundPayment = Payment.builder()
+                    .booking(booking)
+                    .user(booking.getUser())
+                    .amount(refundAmount)
+                    .paymentMethod(PaymentMethod.VNPAY)
+                    .paymentStatus(PaymentStatus.REFUNDED)
+                    .paymentPurpose(PaymentPurpose.REFUND)
+                    .transactionRef("REF-" + booking.getBookingCode())
+                    .gatewayTransactionNo(originalPayment.getGatewayTransactionNo())
+                    .build();
+            paymentRepository.save(refundPayment);
+        }
+
+        releaseBookingInternal(booking, BookingStatus.CANCELLED, guestId);
+
+        return refundAmount.compareTo(BigDecimal.ZERO) > 0
+                ? "Hủy thành công. Số tiền " + refundAmount + " VNĐ đã được gửi yêu cầu hoàn trả qua VNPAY."
+                : "Hủy thành công. Bạn không được hoàn tiền do vi phạm chính sách hủy.";
+    }
+
     private HostBookingResponse mapToHostBookingResponse(Booking booking) {
 
         BigDecimal total = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
@@ -360,5 +449,24 @@ public class BookingServiceImpl implements BookingService {
                 .status(booking.getStatus())
                 .createdAt(booking.getCreatedAt())
                 .build();
+    }
+    private BigDecimal calculateRefundAmount(Booking booking) {
+        LocalDate today = LocalDate.now();
+        CancellationPolicy policy = booking.getCancellationPolicy();
+        LocalDate deadline = booking.getCheckInDate().minusDays(policy.getDaysBeforeCheckin());
+
+        BigDecimal amountPaid = booking.getDepositAmount();
+        BigDecimal totalOrder = booking.getDepositAmount().add(booking.getRemainingAmount());
+
+        if (today.isBefore(deadline)) {
+            return amountPaid;
+        } else {
+            BigDecimal penaltyRate = BigDecimal.valueOf(100 - policy.getRefundPercentage())
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            BigDecimal penaltyAmount = totalOrder.multiply(penaltyRate);
+
+            BigDecimal refund = amountPaid.subtract(penaltyAmount);
+            return refund.compareTo(BigDecimal.ZERO) > 0 ? refund : BigDecimal.ZERO;
+        }
     }
 }

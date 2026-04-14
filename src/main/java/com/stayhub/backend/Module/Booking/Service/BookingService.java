@@ -13,4 +13,5 @@ public interface BookingService {
     PageResponse<HostBookingResponse> getBookingsForHost(Long hostId, int page, int size);
     PageResponse<GuestBookingResponse> getBookingForGuest(Long guestId, int page, int size);
     void releaseBookingInternal(Booking booking, BookingStatus targetStatus, Long cancelledBy);
+    String cancelBookingByGuest(Long guestId, String bookingCode);
 }

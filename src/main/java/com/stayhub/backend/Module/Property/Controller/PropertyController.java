@@ -144,7 +144,6 @@ public class PropertyController {
     }
 
     @GetMapping("host/cancellation-policy")
-    @PreAuthorize("hasAuthority('ROLE_HOST')")
     @Operation(summary = "HOST - Lấy danh sách chính sách hủy hoạt động")
     public ResponseEntity<ResponseData<List<CancellationPolicyResponse>>> getActivePolicies() {
 

@@ -1,5 +1,10 @@
 package com.stayhub.backend.Common.Util;
 
 public enum PaymentMethod {
-    VNPAY, MOMO, PAYPAL, STRIPE, CASH
+    VNPAY,
+    MOMO,
+    STRIPE,
+    PAYPAL,
+    CASH,
+    BANK_TRANSFER
 }

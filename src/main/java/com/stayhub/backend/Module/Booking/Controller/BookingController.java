@@ -74,7 +74,7 @@ public class BookingController {
     }
 
     @Operation(summary = "USER - Hủy đơn đặt phòng")
-    @PutMapping("/guest/cancel/{bookingCode}")
+    @PutMapping("/cancel/{bookingCode}")
     @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<ResponseData<String>> cancelBookingByGuest(
             @PathVariable String bookingCode,

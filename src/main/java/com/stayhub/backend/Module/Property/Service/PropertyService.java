@@ -1,6 +1,7 @@
 package com.stayhub.backend.Module.Property.Service;
 
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
+import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 
@@ -14,5 +15,6 @@ public interface PropertyService {
     PropertyDetailResponse getPropertyBySlug(String slug, LocalDate checkInDate, LocalDate checkOutDate);
     List<RoomPriceResponse> calculatePriceForProperty(String slug, LocalDate checkInDate, LocalDate checkOutDate, List<Long> roomIds);
     void approveFirstPendingPropertyByHost(Long id);
+    void reviewProperty(Long propertyId, PropertyApprovalRequest request);
     List<PropertyCardResponse> getTopPropertiesByCategorySlug(String categorySlug);
 }

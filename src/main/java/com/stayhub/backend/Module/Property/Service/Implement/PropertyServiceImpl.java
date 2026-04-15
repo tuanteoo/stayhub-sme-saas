@@ -7,6 +7,7 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Mapper.CancellationPolicyMapper;
 import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Common.Util.*;
+import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
@@ -519,6 +520,17 @@ public class PropertyServiceImpl implements PropertyService {
             property.setStatus(PropertyStatus.PUBLISHED);
             propertyRepository.save(property);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void reviewProperty(Long propertyId, PropertyApprovalRequest request) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài đăng!"));
+
+        property.setStatus(request.status());
+
+        propertyRepository.save(property);
     }
 
     @Override

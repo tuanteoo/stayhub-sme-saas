@@ -3,6 +3,7 @@ package com.stayhub.backend.Module.Property.Controller;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
+import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.Service.CancellationPolicyService;
@@ -156,5 +157,17 @@ public class PropertyController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Operation(summary = "ADMIN - Thẩm định đăng của host")
+    @PutMapping("/admin/{propertyId}/review")
+    public ResponseEntity<ResponseData<String>> reviewProperty(
+            @PathVariable Long propertyId,
+            @Valid @RequestBody PropertyApprovalRequest request) {
+
+        propertyService.reviewProperty(propertyId, request);
+
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Cập nhật trạng thái bài đăng thành công", null));
     }
 }

@@ -540,7 +540,6 @@ public class PropertyServiceImpl implements PropertyService {
                 .toList();
     }
 
-
     private PropertyCardResponse mapToPropertyCardResponse(Property property) {
         String thumbnailUrl = property.getImages().stream()
                 .filter(PropertyImage::getIsThumbnail)

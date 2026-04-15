@@ -60,3 +60,9 @@ springdoc:
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
   writer-with-default-pretty-printer: true
+
+logging:
+  file:
+    name: /home/ubuntu/app/logs/app.log
+  pattern:
+    console: %d{yyyy-MM-dd HH:mm:ss} - %msg%n

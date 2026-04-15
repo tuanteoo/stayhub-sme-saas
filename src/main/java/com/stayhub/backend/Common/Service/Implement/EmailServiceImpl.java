@@ -2,6 +2,7 @@ package com.stayhub.backend.Common.Service.Implement;
 
 import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Service.EmailService;
+import com.stayhub.backend.Common.Util.BookingPaymentOption;
 import com.stayhub.backend.Common.Util.ErrorCode;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import jakarta.mail.MessagingException;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -73,15 +75,28 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // Đọc nội dung file HTML
             ClassPathResource resource = new ClassPathResource("templates/email/booking-receipt.html");
             String htmlContent = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
-            // Format tiền tệ Việt Nam
             NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
-            String formattedPrice = currencyFormat.format(booking.getTotalPrice());
 
-            // Thay thế các biến trong HTML bằng data thật
+            BigDecimal totalAmount = booking.getTotalPrice().add(booking.getCleaningFee());
+            String formatTotalAmount = currencyFormat.format(totalAmount);
+
+            BigDecimal amountPaid = booking.getDepositAmount() != null ? booking.getDepositAmount() : BigDecimal.ZERO;
+            String formattedAmountPaid = currencyFormat.format(amountPaid);
+
+            BigDecimal remainingAmount = totalAmount.subtract(amountPaid);
+            String formattedRemainingAmount = currencyFormat.format(remainingAmount);
+
+            String paymentStatusStr;
+            if (booking.getPaymentOption() == BookingPaymentOption.PAY_IN_FULL) {
+                paymentStatusStr = "Đã thanh toán toàn bộ";
+            } else {
+                paymentStatusStr = "Đã thanh toán cọc";
+            }
+
+            // 3. Thay thế các biến trong HTML bằng data thật
             htmlContent = htmlContent.replace("{{guestName}}", guestName)
                     .replace("{{bookingCode}}", booking.getBookingCode())
                     .replace("{{propertyName}}", booking.getProperty().getName())
@@ -89,7 +104,10 @@ public class EmailServiceImpl implements EmailService {
                     .replace("{{checkOutDate}}", booking.getCheckOutDate().toString())
                     .replace("{{totalNights}}", String.valueOf(booking.getTotalNights()))
                     .replace("{{totalGuests}}", String.valueOf(booking.getTotalGuests()))
-                    .replace("{{totalPrice}}", formattedPrice);
+                    .replace("{{totalPrice}}", formatTotalAmount)
+                    .replace("{{amountPaid}}", formattedAmountPaid)
+                    .replace("{{remainingAmount}}", formattedRemainingAmount)
+                    .replace("{{paymentStatus}}", paymentStatusStr);
 
             helper.setFrom(fromEmail, "StayHub Support");
             helper.setTo(toEmail);
@@ -104,6 +122,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Async("emailTaskExecutor")
     @Override
     public void sendHostApprovalEmail(String toEmail, String hostName) {
         try {

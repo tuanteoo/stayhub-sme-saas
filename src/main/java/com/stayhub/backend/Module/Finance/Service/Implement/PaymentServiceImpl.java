@@ -13,6 +13,7 @@ import com.stayhub.backend.Common.Util.PaymentStatus;
 import com.stayhub.backend.Config.VNPayConfig;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
+import com.stayhub.backend.Module.Finance.Service.WalletService;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Property.Model.SubscriptionPlan;
 import com.stayhub.backend.Module.Property.Repository.SubscriptionPlanRepository;
@@ -46,6 +47,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final EmailService emailService;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionService subscriptionService;
+    private final WalletService walletService;
 
     @Lazy
     @Autowired
@@ -257,7 +259,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         Booking booking = payment.getBooking();
 
-        // Kiểm tra số tiền
         long expectedAmount = payment.getAmount().multiply(BigDecimal.valueOf(100)).longValue();
         if (vnpAmount != expectedAmount) {
             response.put("RspCode", "04");
@@ -265,7 +266,6 @@ public class PaymentServiceImpl implements PaymentService {
             return response;
         }
 
-        // Cập nhật thông tin Gateway vào Payment
         payment.setGatewayTransactionNo(vnp_TransactionNo);
         payment.setPayDate(vnp_PayDate);
         payment.setGatewayResponseCode(vnp_ResponseCode);
@@ -273,9 +273,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         if ("00".equals(vnp_ResponseCode)) {
             payment.setPaymentStatus(PaymentStatus.COMPLETED);
+            emailService.sendBookingReceiptEmail(booking.getUser().getEmail(), booking.getUser().getProfile().getFullName(), booking);
+            walletService.processBookingPaymentSuccess(booking, payment.getAmount());
             if (booking.getPaymentOption() == BookingPaymentOption.PAY_IN_FULL) {
                 booking.setStatus(BookingStatus.CONFIRMED);
-                emailService.sendBookingReceiptEmail(booking.getUser().getEmail(), booking.getUser().getProfile().getFullName(), booking);
             } else {
                 booking.setStatus(BookingStatus.PARTIALLY_PAID);
             }

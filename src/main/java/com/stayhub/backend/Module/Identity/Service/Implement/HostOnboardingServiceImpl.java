@@ -3,10 +3,9 @@ package com.stayhub.backend.Module.Identity.Service.Implement;
 import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Service.EmailService;
-import com.stayhub.backend.Common.Util.ErrorCode;
-import com.stayhub.backend.Common.Util.HostOnboardingStatus;
-import com.stayhub.backend.Common.Util.SubscriptionTier;
-import com.stayhub.backend.Common.Util.UserSubscriptionStatus;
+import com.stayhub.backend.Common.Util.*;
+import com.stayhub.backend.Module.Finance.Model.Wallet;
+import com.stayhub.backend.Module.Finance.Repository.WalletRepository;
 import com.stayhub.backend.Module.Identity.DTO.Request.HostApprovalRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.HostRegistrationWithPropertyRequest;
 import com.stayhub.backend.Module.Identity.DTO.Request.HostVerificationRequest;
@@ -22,13 +21,16 @@ import com.stayhub.backend.Module.Property.Model.UserSubscription;
 import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class HostOnboardingServiceImpl implements HostOnboardingService {
     private final HostDetailRepository hostDetailRepository;
     private final UserRepository userRepository;
@@ -39,6 +41,7 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final EmailService emailService;
+    private final WalletRepository walletRepository;
 
     private String generateRandomBlock(int length) {
         StringBuilder sb = new StringBuilder(length);
@@ -113,6 +116,7 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
             user.getRoles().add(hostRole);
 
             userRepository.save(user);
+            log.info("Đã gán ROLE_HOST cho User {} sau khi duyệt hồ sơ đăng ký", user.getId());
 
             propertyService.approveFirstPendingPropertyByHost(hostDetail.getId());
 
@@ -129,6 +133,20 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
                     .currentCreditLimit(freePlan.getCreditLimit())
                     .build();
             userSubscriptionRepository.save(userSubscription);
+
+            log.info("Đã kích hoạt gói cước FREE cho Host {} sau khi duyệt hồ sơ đăng ký", user.getId());
+
+            if (!walletRepository.existsByUser_Id(hostDetail.getId())){
+                walletRepository.save(Wallet.builder()
+                                .user(user)
+                                .availableBalance(BigDecimal.ZERO)
+                                .pendingBalance(BigDecimal.ZERO)
+                                .debtBalance(BigDecimal.ZERO)
+                                .currency("VND")
+                                .status(WalletStatus.ACTIVE)
+                        .build());
+                log.info("Đã khởi tạo ví cho Host {} sau khi duyệt hồ sơ đăng ký", user.getId());
+            }
 
             emailService.sendHostApprovalEmail(user.getEmail(), user.getProfile().getFullName());
         }

@@ -49,9 +49,27 @@
       <th>Số khách</th>
       <td>{{totalGuests}} người</td>
     </tr>
-    <tr class="total-row">
-      <th>Tổng tiền đã thanh toán</th>
+
+    <tr>
+      <td colspan="2" style="background-color: #f9f9f9; text-align: center; font-weight: bold; color: #333;">
+        CHI TIẾT THANH TOÁN
+      </td>
+    </tr>
+    <tr>
+      <th>Tổng giá trị đơn hàng</th>
       <td>{{totalPrice}} VNĐ</td>
+    </tr>
+    <tr>
+      <th>Trạng thái thanh toán</th>
+      <td><span style="background-color: #e6f4ea; color: #28a745; padding: 4px 8px; border-radius: 4px; font-weight: bold;">{{paymentStatus}}</span></td>
+    </tr>
+    <tr>
+      <th>Đã thanh toán (Qua VNPAY)</th>
+      <td><strong>{{amountPaid}} VNĐ</strong></td>
+    </tr>
+    <tr class="total-row">
+      <th>Cần thanh toán khi nhận phòng</th>
+      <td>{{remainingAmount}} VNĐ</td>
     </tr>
   </table>
   <div class="footer">

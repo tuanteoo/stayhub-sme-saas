@@ -13,6 +13,7 @@ public record GuestBookingResponse(
         String thumbnailUrl,
         String propertyName,
         String propertyAddress,
+        String hostEmail,
         String hostName,
         String hostPhone,
         LocalDate checkInDate,

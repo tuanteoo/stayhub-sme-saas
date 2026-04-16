@@ -65,8 +65,8 @@ public class BookingController {
     @Operation(summary = "USER - Xem lịch sử các chuyến đi")
     public ResponseEntity<ResponseData<PageResponse<GuestBookingResponse>>> getMyTrips(
             @AuthenticationPrincipal CustomUserDetails currentUser,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
 
         PageResponse<GuestBookingResponse> response = bookingService.getBookingForGuest(currentUser.getUser().getId(), page, size);
 

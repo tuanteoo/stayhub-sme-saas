@@ -441,7 +441,8 @@ public class BookingServiceImpl implements BookingService {
                 .propertyName(booking.getProperty().getName())
                 .propertyAddress(booking.getProperty().getAddressDetail() + ", " + booking.getProperty().getProvince())
                 .hostName(booking.getProperty().getHost().getProfile().getFullName())
-                .hostPhone(booking.getProperty().getHost().getProfile().getPhoneNumber())
+                .hostEmail(booking.getProperty().getHost().getHostDetail().getSupportEmail())
+                .hostPhone(booking.getProperty().getHost().getHostDetail().getBusinessPhone())
 
                 .thumbnailUrl(thumbnail)
                 .checkInDate(booking.getCheckInDate())

@@ -97,7 +97,8 @@ public class WalletServiceImpl implements WalletService {
         Wallet wallet = walletRepository.findByUser_Id(hostId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bạn chưa được khởi tạo ví điện tử."));
 
-        int pageNumber = pageNo > 0 ? pageNo - 1 : 0;
+        int validPage = (pageNo <= 0) ? 1 : pageNo;
+        int pageNumber = validPage - 1;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<Transaction> transactionPage;
 
@@ -126,7 +127,7 @@ public class WalletServiceImpl implements WalletService {
                 .toList();
 
         return PageResponse.<TransactionResponse>builder()
-                .pageNo(transactionPage.getNumber() + 1)
+                .pageNo(validPage)
                 .pageSize(transactionPage.getSize())
                 .totalPage(transactionPage.getTotalPages())
                 .totalElements(transactionPage.getTotalElements())

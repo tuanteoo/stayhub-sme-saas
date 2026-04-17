@@ -3,7 +3,6 @@ package com.stayhub.backend.Module.Property.Controller;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
-import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.Service.CancellationPolicyService;
@@ -21,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -144,14 +144,14 @@ public class PropertyController {
     }
 
     @GetMapping("host/cancellation-policy")
-    @Operation(summary = "HOST - Lấy danh sách chính sách hủy hoạt động")
+    @Operation(summary = "HOST - Ly danh sch chnh sch hy hot ‘™ng")
     public ResponseEntity<ResponseData<List<CancellationPolicyResponse>>> getActivePolicies() {
 
         List<CancellationPolicyResponse> data = cancellationPolicyService.getActivePolicies();
 
         ResponseData<List<CancellationPolicyResponse>> response = new ResponseData<>(
                 HttpStatus.OK.value(),
-                "Lấy danh sách chính sách hủy thành công",
+                "Ly danh sch chnh sch hy thnh cng",
                 data
         );
 
@@ -159,14 +159,14 @@ public class PropertyController {
     }
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @Operation(summary = "ADMIN - Thẩm định đăng của host")
+    @Operation(summary = "ADMIN - Duyệt bài đăng của host")
     @PutMapping("/admin/{propertyId}/review")
     public ResponseEntity<ResponseData<String>> reviewProperty(
             @PathVariable Long propertyId,
-            @Valid @RequestBody PropertyApprovalRequest request) {
+            @Valid @RequestBody com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest request) {
 
         propertyService.reviewProperty(propertyId, request);
 
-        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Cập nhật trạng thái bài đăng thành công", null));
+        return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật trạng thái bài đăng thành công", null));
     }
 }

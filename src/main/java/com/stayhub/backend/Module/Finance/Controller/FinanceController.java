@@ -87,11 +87,11 @@ public class FinanceController {
                     description = "(available, pending, debt)"
             )
             @RequestParam(required = false) String balanceAffected,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "1") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize) {
 
         PageResponse<TransactionResponse> response = walletService.getMyTransactions(
-                userDetails.getUser().getId(), balanceAffected, page, size);
+                userDetails.getUser().getId(), balanceAffected, pageNo, pageSize);
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy lịch sử giao dịch thành công", response));
     }

@@ -23,7 +23,7 @@ jobs:
         run: nc -zv -w 5 ${{ secrets.EC2_HOST }} 22
 
       - name: Đóng gói ứng dụng bằng Maven
-        run: mvn clean package -DskipTests
+        run: mvn clean package -Dmaven.test.skip=true
 
       - name: Đổi tên file Jar thành backend.jar
         run: |

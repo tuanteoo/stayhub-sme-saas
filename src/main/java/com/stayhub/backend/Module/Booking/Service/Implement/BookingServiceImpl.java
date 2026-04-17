@@ -5,9 +5,7 @@ import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
-import com.stayhub.backend.Config.VNPayConfig;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
-import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.GuestBookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.HostBookingResponse;
 import com.stayhub.backend.Module.Booking.Model.Booking;
@@ -42,9 +40,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -347,14 +343,12 @@ public class BookingServiceImpl implements BookingService {
             throw new InvalidDataException("Bạn không có quyền thao tác trên đơn hàng này.");
         }
 
-        // 1. SỬA LỖI: Bổ sung thêm trạng thái PARTIALLY_PAID (Đã thanh toán cọc)
         if (booking.getStatus() != BookingStatus.CONFIRMED
                 && booking.getStatus() != BookingStatus.PARTIALLY_PAID
                 && booking.getStatus() != BookingStatus.AWAITING_PAYMENT) {
             throw new InvalidDataException("Chỉ có thể hủy đơn hàng đang chờ thanh toán, đã cọc hoặc đã xác nhận.");
         }
 
-        // 2. Trường hợp CHƯA THANH TOÁN -> Hủy chay
         if (booking.getStatus() == BookingStatus.AWAITING_PAYMENT) {
             releaseBookingInternal(booking, BookingStatus.CANCELLED, guestId);
 

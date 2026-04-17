@@ -7,7 +7,6 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Mapper.CancellationPolicyMapper;
 import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Common.Util.*;
-import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
@@ -256,6 +255,7 @@ public class PropertyServiceImpl implements PropertyService {
         Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
         Page<Property> propertyPage = propertyRepository.findByHostId(host.getId(), pageable);
         List<HostPropertyResponse> responses = propertyPage.stream().map(property -> {
+            // Lấy ảnh Thumbnail
             String thumbnailUrl = property.getImages().stream()
                     .filter(PropertyImage::getIsThumbnail)
                     .map(PropertyImage::getUrl)
@@ -523,7 +523,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void reviewProperty(Long propertyId, PropertyApprovalRequest request) {
+    public void reviewProperty(Long propertyId, com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest request) {
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài đăng!"));
 

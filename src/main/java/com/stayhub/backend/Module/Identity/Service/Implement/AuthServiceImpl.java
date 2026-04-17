@@ -173,6 +173,7 @@ public class AuthServiceImpl implements AuthService {
 
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
 
+        // Delete existing refresh tokens for the same user and device to prevent tracking bloat
         refreshTokenRepository.deleteByUserAndDeviceInfo(user, deviceInfo);
 
         String refreshTokenString = UUID.randomUUID().toString();

@@ -203,7 +203,6 @@ public class PaymentServiceImpl implements PaymentService {
 
             String vnp_IpAddr = "127.0.0.1";
 
-            // Quy tắc tạo checksum: nối các tham số bằng dấu |
             String hashData = vnp_RequestId + "|" + vnp_Version + "|" + vnp_Command + "|" + vnp_TmnCode + "|" +
                     vnp_TransactionType + "|" + vnp_TxnRef + "|" + vnp_Amount + "|" + vnp_TransactionNo + "|" +
                     vnp_TransactionDate + "|" + vnp_CreateBy + "|" + vnp_CreateDate + "|" + vnp_IpAddr + "|" + vnp_OrderInfo;

@@ -141,7 +141,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResponse login(LoginRequest request) {
         HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-        String ipAddress = httpRequest.getRemoteAddr();
+        String ipAddress = httpRequest.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isEmpty()) {
+            ipAddress = httpRequest.getRemoteAddr();
+        }
         String deviceInfo = httpRequest.getHeader("User-Agent");
 
         Authentication authentication = authenticationManager.authenticate(
@@ -153,6 +156,12 @@ public class AuthServiceImpl implements AuthService {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         User user = userDetails.getUser();
 
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new AppException(ErrorCode.USER_BANNED);
+        } else if (user.getStatus() == UserStatus.UNVERIFIED) {
+            throw new AppException(ErrorCode.USER_UNVERIFIED);
+        }
+
         Profile profile = profileRepository.findByUserId(user.getId())
                 .orElse(new Profile());
 
@@ -163,6 +172,8 @@ public class AuthServiceImpl implements AuthService {
         );
 
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
+
+        refreshTokenRepository.deleteByUserAndDeviceInfo(user, deviceInfo);
 
         String refreshTokenString = UUID.randomUUID().toString();
         RefreshToken refreshToken = RefreshToken.builder()

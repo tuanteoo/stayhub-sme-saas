@@ -256,7 +256,6 @@ public class PropertyServiceImpl implements PropertyService {
         Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
         Page<Property> propertyPage = propertyRepository.findByHostId(host.getId(), pageable);
         List<HostPropertyResponse> responses = propertyPage.stream().map(property -> {
-            // Lấy ảnh Thumbnail
             String thumbnailUrl = property.getImages().stream()
                     .filter(PropertyImage::getIsThumbnail)
                     .map(PropertyImage::getUrl)

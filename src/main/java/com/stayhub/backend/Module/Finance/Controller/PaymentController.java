@@ -1,9 +1,14 @@
 package com.stayhub.backend.Module.Finance.Controller;
 
+import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
+import com.stayhub.backend.Module.Finance.DTO.Response.TransactionResponse;
+import com.stayhub.backend.Module.Finance.DTO.Response.WalletResponse;
 import com.stayhub.backend.Module.Finance.Service.PaymentService;
+import com.stayhub.backend.Module.Finance.Service.WalletService;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +28,7 @@ import java.util.Map;
 @Tag(name = "Payment", description = "API Thanh toán với VNPAY")
 public class PaymentController {
     private final PaymentService paymentService;
+    private final WalletService walletService;
 
     @GetMapping("/vnpay/booking/create-url")
     @PreAuthorize("hasAuthority('ROLE_USER')")
@@ -58,5 +64,35 @@ public class PaymentController {
     public ResponseEntity<Map<String, String>> processVNPayIPN(HttpServletRequest request) {
         Map<String, String> response = paymentService.processVnPayIpn(request);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "HOST - Xem thông tin ví")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @GetMapping("/host/wallet")
+    public ResponseEntity<ResponseData<WalletResponse>> getMyWallet(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        WalletResponse response = walletService.getMyWallet(userDetails.getUser().getId());
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy thông tin ví thành công", response));
+    }
+
+    @Operation(summary = "HOST - Xem lịch sử giao dịch")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @GetMapping("/host/transactions")
+    public ResponseEntity<ResponseData<PageResponse<TransactionResponse>>> getMyTransactions(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+
+            @Parameter(
+                    name = "balanceAffected",
+                    description = "(available, pending, debt)"
+            )
+            @RequestParam(required = false) String balanceAffected,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        PageResponse<TransactionResponse> response = walletService.getMyTransactions(
+                userDetails.getUser().getId(), balanceAffected, page, size);
+
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy lịch sử giao dịch thành công", response));
     }
 }

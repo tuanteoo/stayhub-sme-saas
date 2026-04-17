@@ -25,8 +25,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/payments")
 @RequiredArgsConstructor
-@Tag(name = "Payment", description = "API Thanh toán với VNPAY")
-public class PaymentController {
+@Tag(name = "Finance", description = "API Tài Chính")
+public class FinanceController {
     private final PaymentService paymentService;
     private final WalletService walletService;
 

@@ -146,9 +146,6 @@ public class AuthServiceImpl implements AuthService {
             ipAddress = httpRequest.getRemoteAddr();
         }
         String deviceInfo = httpRequest.getHeader("User-Agent");
-        if (deviceInfo != null && deviceInfo.length() > 50) {
-            deviceInfo = deviceInfo.substring(0, 50);
-        }
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())

@@ -22,16 +22,16 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, unique = true, columnDefinition = "TEXT")
     private String token;
 
     @Column(name = "expiry_date", nullable = false)
     private LocalDateTime expiryDate;
 
-    @Column(name = "device_info", length = 255)
+    @Column(name = "device_info", columnDefinition = "TEXT")
     private String deviceInfo;
 
-    @Column(name = "ip_address", length = 50)
+    @Column(name = "ip_address", columnDefinition = "TEXT")
     private String ipAddress;
 
     @CreationTimestamp

@@ -11,4 +11,5 @@ public interface WalletService {
     void processBookingPaymentSuccess(Booking booking, BigDecimal amountPaid);
     WalletResponse getMyWallet(Long hostId);
     PageResponse<TransactionResponse> getMyTransactions(Long hostId, String balanceAffected, int page, int size);
+    void unlockPendingBalance(Booking booking);
 }

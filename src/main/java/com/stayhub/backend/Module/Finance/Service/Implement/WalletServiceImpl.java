@@ -4,14 +4,17 @@ import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.BalanceAffected;
+import com.stayhub.backend.Common.Util.PaymentStatus;
 import com.stayhub.backend.Common.Util.TransactionStatus;
 import com.stayhub.backend.Common.Util.TransactionType;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Finance.DTO.Response.TransactionResponse;
 import com.stayhub.backend.Module.Finance.DTO.Response.WalletResponse;
+import com.stayhub.backend.Module.Finance.Model.Payment;
 import com.stayhub.backend.Module.Finance.Model.Transaction;
 import com.stayhub.backend.Module.Finance.Model.Wallet;
+import com.stayhub.backend.Module.Finance.Repository.PaymentRepository;
 import com.stayhub.backend.Module.Finance.Repository.TransactionRepository;
 import com.stayhub.backend.Module.Finance.Repository.WalletRepository;
 import com.stayhub.backend.Module.Finance.Service.WalletService;
@@ -22,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -34,6 +38,7 @@ public class WalletServiceImpl implements WalletService {
     private final BookingRepository bookingRepository;
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
+    private final PaymentRepository paymentRepository;
 
     @Override
     public void processBookingPaymentSuccess(Booking booking, BigDecimal amountPaid) {
@@ -133,5 +138,39 @@ public class WalletServiceImpl implements WalletService {
                 .totalElements(transactionPage.getTotalElements())
                 .items(responses)
                 .build();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void unlockPendingBalance(Booking booking) {
+        User host = booking.getBookingRooms().get(0).getRoom().getProperty().getHost();
+        Wallet wallet = walletRepository.findByUser_Id(host.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ví của Chủ nhà"));
+
+        Payment payment = paymentRepository.findFirstByBooking_IdAndPaymentStatusOrderByCreatedAtDesc(
+                        booking.getId(), PaymentStatus.COMPLETED)
+                .orElseThrow(() -> new InvalidDataException("Không tìm thấy giao dịch thanh toán gốc."));
+
+        BigDecimal commission = booking.getPlatformCommission() != null ? booking.getPlatformCommission() : BigDecimal.ZERO;
+        BigDecimal netIncome = payment.getAmount().subtract(commission);
+
+        if (netIncome.compareTo(BigDecimal.ZERO) > 0) {
+            wallet.setPendingBalance(wallet.getPendingBalance().subtract(netIncome));
+            wallet.setAvailableBalance(wallet.getAvailableBalance().add(netIncome));
+            walletRepository.save(wallet);
+
+            Transaction trans = Transaction.builder()
+                    .wallet(wallet)
+                    .booking(booking)
+                    .amount(netIncome)
+                    .balanceAffected(BalanceAffected.AVAILABLE)
+                    .type(TransactionType.BOOKING_INCOME)
+                    .status(TransactionStatus.SUCCESS)
+                    .description("Hoàn tất đơn " + booking.getBookingCode() + " - Tiền đã có thể rút.")
+                    .build();
+            transactionRepository.save(trans);
+
+            log.info("Đã chuyển {} VND sang ví Khả dụng cho Host {} (Đơn {})", netIncome, host.getId(), booking.getBookingCode());
+        }
     }
 }

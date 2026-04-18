@@ -15,6 +15,7 @@ import com.stayhub.backend.Module.Booking.Service.BookingService;
 import com.stayhub.backend.Module.Finance.Model.Payment;
 import com.stayhub.backend.Module.Finance.Repository.PaymentRepository;
 import com.stayhub.backend.Module.Finance.Service.PaymentService;
+import com.stayhub.backend.Module.Finance.Service.WalletService;
 import com.stayhub.backend.Module.Identity.Model.User;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
 import com.stayhub.backend.Module.Property.Model.*;
@@ -53,6 +54,7 @@ public class BookingServiceImpl implements BookingService {
     private final RoomAvailabilityRepository roomAvailabilityRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final PaymentRepository paymentRepository;
+    private final WalletService walletService;
 
     @Lazy
     @Autowired
@@ -393,6 +395,67 @@ public class BookingServiceImpl implements BookingService {
                 ? "Hủy thành công. Số tiền " + refundAmount + " VNĐ đã được gửi yêu cầu hoàn trả qua VNPAY."
                 : "Hủy thành công. Bạn không được hoàn tiền do vi phạm chính sách hủy.";
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public String hostCheckIn(Long hostId, String bookingCode) {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+
+        Long actualHostId = booking.getBookingRooms().get(0).getRoom().getProperty().getHost().getId();
+        if (!actualHostId.equals(hostId)) throw new InvalidDataException("Bạn không có quyền thao tác đơn này.");
+
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(booking.getCheckInDate()) || today.isAfter(booking.getCheckOutDate())) {
+            throw new InvalidDataException("Chỉ có thể Check-in vào ngày nhận phòng hoặc trong khoảng thời gian lưu trú.");
+        }
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PARTIALLY_PAID) {
+            throw new InvalidDataException("Chỉ có thể Check-in cho đơn hàng đã thanh toán hoặc đã xác nhận.");
+        }
+
+        booking.setStatus(BookingStatus.CHECKED_IN);
+        bookingRepository.save(booking);
+        return "Xác nhận Check-in thành công. Khách hàng không thể hủy đơn này nữa.";
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public String hostCheckOut(Long hostId, String bookingCode) {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+
+        Long actualHostId = booking.getBookingRooms().get(0).getRoom().getProperty().getHost().getId();
+        if (!actualHostId.equals(hostId)) throw new InvalidDataException("Bạn không có quyền thao tác đơn này.");
+
+        if (booking.getStatus() != BookingStatus.CHECKED_IN) {
+            throw new InvalidDataException("Chỉ có thể Check-out khi đơn hàng đang ở trạng thái Check-in.");
+        }
+
+        booking.setStatus(BookingStatus.CHECKED_OUT);
+        bookingRepository.save(booking);
+        return "Check-out thành công. Đang chờ khách xác nhận hoàn thành chuyến đi.";
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public String guestCompleteBooking(Long guestId, String bookingCode) {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+
+        if (!booking.getUser().getId().equals(guestId)) throw new InvalidDataException("Bạn không có quyền thao tác đơn này.");
+
+        if (booking.getStatus() != BookingStatus.CHECKED_OUT) {
+            throw new InvalidDataException("Chỉ có thể hoàn thành khi Chủ nhà đã Check-out.");
+        }
+
+        booking.setStatus(BookingStatus.COMPLETED);
+        bookingRepository.save(booking);
+
+        walletService.unlockPendingBalance(booking);
+        return "Tuyệt vời! Chuyến đi đã hoàn tất. Cảm ơn bạn đã sử dụng StayHub.";
+    }
+
 
     private HostBookingResponse mapToHostBookingResponse(Booking booking) {
 

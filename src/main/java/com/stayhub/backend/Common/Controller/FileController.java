@@ -17,7 +17,7 @@ import java.util.List;
 public class FileController {
     private final S3PresignedService s3PresignedService;
 
-    @Operation(summary = "HOST_USER - Tạo 1 Presigned URL để tải lên file lên S3")
+    @Operation(summary = "(No testing required) HOST_USER - Tạo 1 Presigned URL để tải lên file lên S3")
     @PreAuthorize("hasAuthority('ROLE_HOST') or hasAuthority('ROLE_USER')")
     @PostMapping("/presigned-url")
     public ResponseData<PresignedUrlResponse> getPresignedUrl(
@@ -31,7 +31,7 @@ public class FileController {
         return new ResponseData<>(200, "Tạo Presigned URL thành công", response);
     }
 
-    @Operation(summary = "HOST_USER - Tạo nhiều Presigned URL để tải lên nhiều file lên S3")
+    @Operation(summary = "(No testing required)HOST_USER - Tạo nhiều Presigned URL để tải lên nhiều file lên S3")
     @PreAuthorize("hasAuthority('ROLE_HOST') or hasAuthority('ROLE_USER')")
     @PostMapping("/presigned-urls/batch")
     public ResponseData<List<PresignedUrlResponse>> getMultiplePresignedUrls(

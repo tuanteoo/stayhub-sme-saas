@@ -60,7 +60,7 @@ public class FinanceController {
     }
 
     @GetMapping("/vnpay/ipn")
-    @Operation(summary = "VNPAY IPN Webhook")
+    @Operation(summary = "(No testing required)VNPAY IPN Webhook")
     public ResponseEntity<Map<String, String>> processVNPayIPN(HttpServletRequest request) {
         Map<String, String> response = paymentService.processVnPayIpn(request);
         return ResponseEntity.ok(response);

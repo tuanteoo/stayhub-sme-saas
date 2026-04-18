@@ -94,7 +94,7 @@ public class BookingController {
         ));
     }
 
-    @Operation(summary = "HOTS - Xác nhận khách đã Check-in")
+    @Operation(summary = "HOST - Xác nhận khách đã Check-in")
     @PreAuthorize("hasAuthority('ROLE_HOST')")
     @PutMapping("/{bookingCode}/check-in")
     public ResponseEntity<ResponseData<String>> hostCheckIn(
@@ -105,7 +105,7 @@ public class BookingController {
         return ResponseEntity.ok(new ResponseData<>(200, message, null));
     }
 
-    @Operation(summary = "Chủ nhà xác nhận khách đã Check-out")
+    @Operation(summary = "HOST - Xác nhận khách đã Check-out")
     @PreAuthorize("hasAuthority('ROLE_HOST')")
     @PutMapping("/{bookingCode}/check-out")
     public ResponseEntity<ResponseData<String>> hostCheckOut(
@@ -116,7 +116,7 @@ public class BookingController {
         return ResponseEntity.ok(new ResponseData<>(200, message, null));
     }
 
-    @Operation(summary = "Khách hàng xác nhận hoàn thành chuyến đi sớm")
+    @Operation(summary = "USER - Xác nhận hoàn thành chuyến đi")
     @PreAuthorize("hasAuthority('ROLE_USER')")
     @PutMapping("/{bookingCode}/complete")
     public ResponseEntity<ResponseData<String>> guestCompleteBooking(
@@ -127,8 +127,8 @@ public class BookingController {
         return ResponseEntity.ok(new ResponseData<>(200, message, null));
     }
 
-    @Operation(summary = "Tạo khiếu nại đơn hàng (Dành cho cả Chủ nhà và Khách thuê)")
-    @PreAuthorize("hasAnyRole('GUEST', 'HOST')")
+    @Operation(summary = "USER,HOST - Tạo khiếu nại cho đơn đặt phòng")
+    @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_HOST')")
     @PostMapping("/{bookingCode}/disputes")
     public ResponseEntity<ResponseData<Object>> createDispute(
             @PathVariable String bookingCode,

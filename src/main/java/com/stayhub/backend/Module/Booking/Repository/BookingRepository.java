@@ -21,4 +21,6 @@ public interface BookingRepository extends JpaRepository<Booking,Long> {
 
     @Query("SELECT b FROM Booking b WHERE b.property.host.id = :hostId ORDER BY b.createdAt DESC")
     Page<Booking> findBookingsByHostId(@Param("hostId") Long hostId, Pageable pageable);
+
+    List<Booking> findByStatusAndUpdatedAtBefore(BookingStatus status, LocalDateTime time);
 }

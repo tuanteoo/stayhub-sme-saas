@@ -5,6 +5,7 @@ import com.stayhub.backend.Common.DTO.Response.ResponseError;
 import com.stayhub.backend.Common.Util.ErrorCode;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -150,5 +151,16 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ResponseError> handleDataIntegrity(DataIntegrityViolationException ex) {
+        ResponseError error = ResponseError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("DATA_TOO_LONG")
+                .message("Dữ liệu gửi lên vượt quá độ dài cho phép (ví dụ: User-Agent quá dài).")
+                .build();
+        return ResponseEntity.badRequest().body(error);
     }
 }

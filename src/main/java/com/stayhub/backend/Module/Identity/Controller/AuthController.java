@@ -1,13 +1,17 @@
 package com.stayhub.backend.Module.Identity.Controller;
 
+import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.DTO.Request.*;
+import com.stayhub.backend.Module.Identity.DTO.Response.HostApplicationDetailResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.HostApplicationResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Module.Identity.Service.HostOnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -98,6 +102,35 @@ public class AuthController {
                 "Gửi hồ sơ đăng ký thành công! Vui lòng chờ Ban quản trị StayHub phê duyệt.", hostCode);
     }
 
+    @Operation(summary = "ADMIN - Lấy danh sách hồ sơ đăng ký Chủ nhà")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/host-applications")
+    public ResponseEntity<ResponseData<PageResponse<HostApplicationResponse>>> getApplications(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        PageResponse<HostApplicationResponse> response = hostOnboardingService.getApplicationsForAdmin(status, pageNo, pageSize, sortBy, sortDir);
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", response));
+    }
+
+    @Operation(summary = "ADMIN - Xem chi tiết hồ sơ đăng ký Chủ nhà")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/host-applications/{hostCode}")
+    public ResponseEntity<ResponseData<HostApplicationDetailResponse>> getApplicationDetail(
+
+            @Parameter(
+                  name = "hostCode",
+                    description = "Mã hồ sơ chủ nhà"
+            )
+            @PathVariable String hostCode) {
+
+        HostApplicationDetailResponse response = hostOnboardingService.getApplicationDetailForAdmin(hostCode);
+        return ResponseEntity.ok(new ResponseData<>(200, "Xem chi tiết hồ sơ thành công", response));
+    }
+
     @PutMapping("/admin/approval-host")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @Operation(summary = "ADMIN - Duyệt hồ sơ đăng ký chủ nhà",
@@ -126,4 +159,5 @@ public class AuthController {
 
         return ResponseEntity.ok(new ResponseData<>(200, message));
     }
+
 }

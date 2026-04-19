@@ -5,6 +5,7 @@ import com.stayhub.backend.Module.Property.DTO.Request.AmenityRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.AmenityResponse;
 import com.stayhub.backend.Module.Property.Service.AmenityService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Amenity", description = "API về Tiện ích")
 public class AmenityController {
     private final AmenityService amenityService;
 

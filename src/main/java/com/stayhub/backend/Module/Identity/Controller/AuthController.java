@@ -8,6 +8,7 @@ import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Module.Identity.Service.HostOnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import java.security.Principal;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "API về xác thực và quản lý người dùng")
 public class AuthController {
     private final AuthService authService;
     private final HostOnboardingService hostOnboardingService;

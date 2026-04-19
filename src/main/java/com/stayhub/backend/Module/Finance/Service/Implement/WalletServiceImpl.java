@@ -231,7 +231,7 @@ public class WalletServiceImpl implements WalletService {
                 .wallet(wallet)
                 .user(host)
                 .amount(request.amountPayout())
-                .bankName(bankAccount.getBankName())
+                .bankCode(bankAccount.getBankCode())
                 .accountNumber(bankAccount.getAccountNumber())
                 .accountHolderName(bankAccount.getAccountHolderName())
                 .status(PayoutStatus.REQUESTED)
@@ -245,7 +245,7 @@ public class WalletServiceImpl implements WalletService {
                 .balanceAffected(BalanceAffected.AVAILABLE)
                 .type(TransactionType.WITHDRAWAL)
                 .status(TransactionStatus.PENDING)
-                .description("Yêu cầu rút tiền về " + bankAccount.getBankName() + " (Đuôi " + bankAccount.getAccountNumber().substring(Math.max(0, bankAccount.getAccountNumber().length() - 4)) + ")")
+                .description("Yêu cầu rút tiền về " + bankAccount.getBankCode() + " (Đuôi " + bankAccount.getAccountNumber().substring(Math.max(0, bankAccount.getAccountNumber().length() - 4)) + ")")
                 .build();
         transactionRepository.save(trans);
 

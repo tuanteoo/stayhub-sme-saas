@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Payout extends AbstractEntity {
+public class Payout {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

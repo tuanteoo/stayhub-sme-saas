@@ -124,6 +124,10 @@ public class FinanceController {
     @DeleteMapping("host/banks/{bankAccountId}")
     @PreAuthorize("hasAuthority('ROLE_HOST')")
     public ResponseEntity<ResponseData<Void>> deleteBank(
+            @Parameter(
+                    name = "bankAccountId",
+                    description = "ID của tài khoản ngân hàng cần xóa - xem ở bảng bank_accounts"
+            )
             @PathVariable Integer bankAccountId,
             @AuthenticationPrincipal CustomUserDetails user) {
 
@@ -148,6 +152,10 @@ public class FinanceController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PutMapping("admin/payouts/{payoutId}")
     public ResponseEntity<ResponseData<String>> processPayout(
+            @Parameter(
+                    name = "payoutId",
+                    description = "ID của lệnh rút tiền - xem ở bảng payouts"
+            )
             @PathVariable Long payoutId,
             @Valid @RequestBody PayoutProcessRequest request) {
 

@@ -31,7 +31,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class WalletServiceImpl implements WalletService {
-    private final BookingRepository bookingRepository;
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
     private final PaymentRepository paymentRepository;

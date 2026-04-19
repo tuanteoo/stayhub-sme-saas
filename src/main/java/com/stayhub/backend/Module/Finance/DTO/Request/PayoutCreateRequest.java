@@ -12,7 +12,7 @@ public record PayoutCreateRequest(
         @NotNull(message = "Số tiền rút không được để trống")
         BigDecimal amountPayout,
 
-        @Schema(description = "ID tài khoản ngân hàng để nhận tiền", example = "1")
+        @Schema(description = "ID tài khoản ngân hàng", example = "1")
         @NotNull(message = "ID tài khoản ngân hàng không được để trống")
         Integer bankAccountId
 ) {

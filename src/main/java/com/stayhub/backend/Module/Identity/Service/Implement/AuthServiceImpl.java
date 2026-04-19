@@ -137,7 +137,7 @@ public class AuthServiceImpl implements AuthService {
         return "Xác thực tài khoản thành công. Bạn có thể đăng nhập ngay bây giờ.";
     }
 
-    @Transactional(rollbackFor = Exception.class)
+
     @Override
     public LoginResponse login(LoginRequest request) {
         HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
@@ -152,7 +152,6 @@ public class AuthServiceImpl implements AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         User user = userDetails.getUser();
 
@@ -162,21 +161,35 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.USER_UNVERIFIED);
         }
 
-        Profile profile = profileRepository.findByUserId(user.getId())
-                .orElse(new Profile());
-
+        Profile profile = profileRepository.findByUserId(user.getId()).orElse(new Profile());
         UserInfResponse userInfResponse = new UserInfResponse(
                 user.getEmail(),
                 profile.getFullName(),
                 profile.getAvatarUrl()
         );
 
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
-
-        // Delete existing refresh tokens for the same user and device to prevent tracking bloat
-        refreshTokenRepository.deleteByUserAndDeviceInfo(user, deviceInfo);
-
         String refreshTokenString = UUID.randomUUID().toString();
+
+        saveLoginSession(user, ipAddress, deviceInfo, refreshTokenString);
+
+        return new LoginResponse(
+                accessToken,
+                refreshTokenString,
+                roles,
+                user.getStatus().name(),
+                userInfResponse
+        );
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    protected void saveLoginSession(User user, String ipAddress, String deviceInfo, String refreshTokenString) {
+        refreshTokenRepository.deleteOldTokens(user, deviceInfo);
+
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(refreshTokenString)
@@ -188,18 +201,6 @@ public class AuthServiceImpl implements AuthService {
 
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
-
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList();
-
-        return new LoginResponse(
-                accessToken,
-                refreshTokenString,
-                roles,
-                user.getStatus().name(),
-                userInfResponse
-        );
     }
 
     @Transactional(rollbackFor = Exception.class)

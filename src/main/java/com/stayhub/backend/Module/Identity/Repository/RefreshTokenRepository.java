@@ -20,7 +20,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     @Modifying
     @Query("DELETE FROM RefreshToken r WHERE r.user = :user AND r.deviceInfo = :deviceInfo")
-    void deleteByUserAndDeviceInfo(@Param("user") User user, @Param("deviceInfo") String deviceInfo);
+    void deleteOldTokens(User user, String deviceInfo);
 
     @Modifying
     @Query("DELETE FROM RefreshToken r WHERE r.expiryDate < CURRENT_TIMESTAMP")

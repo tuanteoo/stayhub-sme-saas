@@ -34,8 +34,8 @@ public class Payout extends AbstractEntity {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "bank_name", length = 100)
-    private String bankName;
+    @Column(name = "bank_code", length = 100)
+    private String bankCode;
 
     @Column(name = "account_number", length = 50)
     private String accountNumber;

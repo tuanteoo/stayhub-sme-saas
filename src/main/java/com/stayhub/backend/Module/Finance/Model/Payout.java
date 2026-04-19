@@ -61,4 +61,7 @@ public class Payout extends AbstractEntity {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "bank_transaction_ref", length = 100)
+    private String bankTransactionRef;
 }

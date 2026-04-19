@@ -90,7 +90,7 @@ public class HostOnboardingServiceImpl implements HostOnboardingService {
         hostDetail.setOnboardingStatus(HostOnboardingStatus.PENDING_REVIEW);
         hostDetailRepository.save(hostDetail);
 
-        propertyService.createProperty(hostId, request.firstProperty());
+        propertyService.createProperty(hostId, request.firstProperty(), true);
 
         return hostDetail.getHostCode();
     }

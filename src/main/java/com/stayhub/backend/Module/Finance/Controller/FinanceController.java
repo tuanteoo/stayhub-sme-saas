@@ -2,8 +2,13 @@ package com.stayhub.backend.Module.Finance.Controller;
 
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
+import com.stayhub.backend.Module.Finance.DTO.Request.BankAccountRequest;
+import com.stayhub.backend.Module.Finance.DTO.Request.PayoutProcessRequest;
+import com.stayhub.backend.Module.Finance.DTO.Response.BankAccountResponse;
+import com.stayhub.backend.Module.Finance.DTO.Request.PayoutCreateRequest;
 import com.stayhub.backend.Module.Finance.DTO.Response.TransactionResponse;
 import com.stayhub.backend.Module.Finance.DTO.Response.WalletResponse;
+import com.stayhub.backend.Module.Finance.Service.BankAccountService;
 import com.stayhub.backend.Module.Finance.Service.PaymentService;
 import com.stayhub.backend.Module.Finance.Service.WalletService;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
@@ -11,15 +16,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -29,6 +34,7 @@ import java.util.Map;
 public class FinanceController {
     private final PaymentService paymentService;
     private final WalletService walletService;
+    private final BankAccountService bankAccountService;
 
     @GetMapping("/vnpay/booking/create-url")
     @PreAuthorize("hasAuthority('ROLE_USER')")
@@ -94,5 +100,57 @@ public class FinanceController {
                 userDetails.getUser().getId(), balanceAffected, pageNo, pageSize);
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy lịch sử giao dịch thành công", response));
+    }
+
+    @Operation(summary = "HOST - Thêm tài khoản ngân hàng")
+    @PostMapping("/host/banks")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    public ResponseEntity<ResponseData<Void>> addBank(
+            @Valid @RequestBody BankAccountRequest request,
+            @AuthenticationPrincipal CustomUserDetails user) {
+        bankAccountService.addBankAccount(user.getUser().getId(), request);
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.CREATED.value(), "Thêm tài khoản ngân hàng thành công", null));
+    }
+
+    @Operation(summary = "HOST - Xem danh sách tài khoản ngân hàng")
+    @GetMapping("/host/banks")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    public ResponseEntity<ResponseData<List<BankAccountResponse>>> getMyBanks(
+            @AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(new ResponseData<>(200, "Thành công", bankAccountService.getMyBankAccounts(user.getUser().getId())));
+    }
+
+    @Operation(summary = "HOST - Xóa tài khoản ngân hàng")
+    @DeleteMapping("host/banks/{bankAccountId}")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    public ResponseEntity<ResponseData<Void>> deleteBank(
+            @PathVariable Integer bankAccountId,
+            @AuthenticationPrincipal CustomUserDetails user) {
+
+        bankAccountService.deleteBankAccount(user.getUser().getId(), bankAccountId);
+
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Xóa tài khoản ngân hàng thành công"));
+    }
+
+    @Operation(summary = "HOST - Yêu cầu rút tiền")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @PostMapping("host/payouts")
+    public ResponseEntity<ResponseData<String>> requestPayout(
+            @Valid @RequestBody PayoutCreateRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        walletService.createPayoutRequest(userDetails.getUser().getId(), request);
+
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.CREATED.value(), "Tạo lệnh rút tiền thành công. Vui lòng chờ Admin phê duyệt."));
+    }
+
+    @Operation(summary = "ADMIN - Duyệt/Từ chối lệnh rút tiền của Chủ nhà")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PutMapping("admin/payouts/{payoutId}")
+    public ResponseEntity<ResponseData<String>> processPayout(
+            @PathVariable Long payoutId,
+            @Valid @RequestBody PayoutProcessRequest request) {
+
+        return ResponseEntity.ok(new ResponseData<>(200, walletService.processPayoutRequestByAdmin(payoutId, request)));
     }
 }

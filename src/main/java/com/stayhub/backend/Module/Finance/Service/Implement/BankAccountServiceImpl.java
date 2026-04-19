@@ -19,8 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class BankAccountServiceImpl implements BankAccountService {
-    private UserRepository userRepository;
-    private BankAccountRepository bankAccountRepository;
+    private final UserRepository userRepository;
+    private final BankAccountRepository bankAccountRepository;
 
     @Transactional(rollbackFor = Exception.class)
     @Override

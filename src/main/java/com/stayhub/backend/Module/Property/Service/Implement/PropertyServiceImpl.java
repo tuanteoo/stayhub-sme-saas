@@ -51,7 +51,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createProperty(Long hostId, PropertyCreateRequest request) {
+    public void createProperty(Long hostId, PropertyCreateRequest request, boolean isFirstPropertyOnboarding) {
         User currentUser = userRepository.findById(hostId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng!"));
 
@@ -62,17 +62,18 @@ public class PropertyServiceImpl implements PropertyService {
                 hostDetail.getOnboardingStatus() != HostOnboardingStatus.PENDING_REVIEW) {
             throw new AppException(ErrorCode.HOST_NOT_APPROVED);
         }
+        if (!isFirstPropertyOnboarding){
+            UserSubscription userSubscription = userSubscriptionRepository.findFirstByUser_IdAndStatusOrderByStartDateDesc(currentUser.getId(), UserSubscriptionStatus.ACTIVE)
+                    .orElseThrow(() -> new InvalidDataException("Bạn chưa có gói đăng ký hoạt động. Vui lòng đăng ký gói cước để tạo chỗ ở."));
 
-        UserSubscription userSubscription = userSubscriptionRepository.findFirstByUser_IdAndStatusOrderByStartDateDesc(currentUser.getId(), UserSubscriptionStatus.ACTIVE)
-                .orElseThrow(() -> new InvalidDataException("Bạn chưa có gói đăng ký hoạt động. Vui lòng đăng ký gói cước để tạo chỗ ở."));
+            long currentPropertyCount = propertyRepository.countByHostId(currentUser.getId());
 
-        long currentPropertyCount = propertyRepository.countByHostId(currentUser.getId());
-
-        Integer maxListings = userSubscription.getCurrentMaxListings();
-        if (maxListings != null && currentPropertyCount >= maxListings) {
-            throw new InvalidDataException(
-                    String.format("Bạn đã đạt giới hạn tạo tối đa %d chỗ ở của gói cước hiện tại. Vui lòng nâng cấp gói cước để tiếp tục đăng bài.", maxListings)
-            );
+            Integer maxListings = userSubscription.getCurrentMaxListings();
+            if (maxListings != null && currentPropertyCount >= maxListings) {
+                throw new InvalidDataException(
+                        String.format("Bạn đã đạt giới hạn tạo tối đa %d chỗ ở của gói cước hiện tại. Vui lòng nâng cấp gói cước để tiếp tục đăng bài.", maxListings)
+                );
+            }
         }
 
         Category category = categoryRepository.findById(request.categoryId())

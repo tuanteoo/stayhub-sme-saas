@@ -43,7 +43,7 @@ public class PropertyController {
     @PostMapping
     public ResponseData<String> createProperty(@AuthenticationPrincipal CustomUserDetails customUserDetails, @Valid @RequestBody PropertyCreateRequest request) {
 
-        propertyService.createProperty(customUserDetails.getUser().getId(), request);
+        propertyService.createProperty(customUserDetails.getUser().getId(), request, false);
 
         return new ResponseData<>(
                 201,

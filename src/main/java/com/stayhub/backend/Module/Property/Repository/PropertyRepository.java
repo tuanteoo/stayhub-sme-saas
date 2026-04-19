@@ -52,8 +52,17 @@ public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpe
     @Query("SELECT p FROM Property p " +
             "JOIN p.host u " +
             "JOIN u.hostDetail hd " +
+            "WHERE hd.onboardingStatus = :onboardingStatus")
+    Page<Property> findAllByOnboardingStatus(
+            @Param("onboardingStatus") HostOnboardingStatus onboardingStatus,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = {"host", "host.profile", "host.hostDetail", "category"})
+    @Query("SELECT p FROM Property p " +
+            "JOIN p.host u " +
+            "JOIN u.hostDetail hd " +
             "WHERE hd.onboardingStatus = :onboardingStatus " +
-            "AND (:status IS NULL OR p.status = :status)")
+            "AND p.status = :status")
     Page<Property> findAllByOnboardingStatusAndPropertyStatus(
             @Param("onboardingStatus") HostOnboardingStatus onboardingStatus,
             @Param("status") PropertyStatus status,

@@ -20,7 +20,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -144,7 +143,7 @@ public class PropertyController {
     }
 
     @GetMapping("host/cancellation-policy")
-    @Operation(summary = "HOST - Ly danh sch chnh sch hy hot ‘™ng")
+    @Operation(summary = "HOST - Lấy danh sách chính sách hủy đang hoạt động")
     public ResponseEntity<ResponseData<List<CancellationPolicyResponse>>> getActivePolicies() {
 
         List<CancellationPolicyResponse> data = cancellationPolicyService.getActivePolicies();

@@ -5,6 +5,10 @@ spring:
     active: dev
   flyway:
     enabled: true
+  jpa:
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
   mail:
     from: stayhub.noreply@gmail.com
     host: smtp.gmail.com

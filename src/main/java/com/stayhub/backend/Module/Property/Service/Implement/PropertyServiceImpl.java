@@ -486,9 +486,8 @@ public class PropertyServiceImpl implements PropertyService {
         }
 
 
-        Page<Property> propertyPage = propertyRepository.findAllByApprovedHosts(propertyStatus, pageable);
-
-
+        Page<Property> propertyPage = propertyRepository.findAllByOnboardingStatusAndPropertyStatus(
+                HostOnboardingStatus.APPROVED, propertyStatus, pageable);
 
         List<AdminPropertyResponse> responses = propertyPage.getContent().stream()
                 .map(p -> {

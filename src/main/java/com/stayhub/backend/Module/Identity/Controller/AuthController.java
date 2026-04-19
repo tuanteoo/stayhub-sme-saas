@@ -133,7 +133,7 @@ public class AuthController {
 
     @PutMapping("/admin/approval-host")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @Operation(summary = "ADMIN - Duyệt hồ sơ đăng ký chủ nhà",
+    @Operation(summary = "ADMIN - Thẩm định hồ sơ đăng ký chủ nhà",
     description = """
             Phương thức: PUT
             

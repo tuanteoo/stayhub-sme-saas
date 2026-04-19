@@ -18,4 +18,5 @@ public interface PropertyService {
     void reviewProperty(Long propertyId, com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest request);
     List<PropertyCardResponse> getTopPropertiesByCategorySlug(String categorySlug);
     PropertyDetailResponse convertToDetailResponse(Property property, LocalDate checkInDate, LocalDate checkOutDate);
+    PageResponse<AdminPropertyResponse> getPropertiesForAdmin(String status, int page, int size, String sortBy, String sortDir);
 }

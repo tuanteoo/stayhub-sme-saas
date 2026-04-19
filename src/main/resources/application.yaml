@@ -66,3 +66,5 @@ logging:
     name: /home/ubuntu/app/logs/app.log
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  level:
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR

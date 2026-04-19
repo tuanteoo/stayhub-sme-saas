@@ -7,6 +7,7 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Mapper.CancellationPolicyMapper;
 import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Common.Util.*;
+import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
 import com.stayhub.backend.Module.Identity.Model.HostDetail;
@@ -472,6 +473,68 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
+    public PageResponse<AdminPropertyResponse> getPropertiesForAdmin(String status, int page, int size, String sortBy, String sortDir) {
+        Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir, "createdAt");
+
+        PropertyStatus propertyStatus = null;
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                propertyStatus = PropertyStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new InvalidDataException("Trạng thái bài đăng không hợp lệ.");
+            }
+        }
+
+
+        Page<Property> propertyPage = propertyRepository.findAllByApprovedHosts(propertyStatus, pageable);
+
+
+
+        List<AdminPropertyResponse> responses = propertyPage.getContent().stream()
+                .map(p -> {
+                    String thumbUrl = p.getImages().stream()
+                            .filter(img -> Boolean.TRUE.equals(img.getIsThumbnail()))
+                            .map(PropertyImage::getUrl)
+                            .findFirst()
+                            .orElse(p.getImages().stream()
+                                    .map(PropertyImage::getUrl)
+                                    .findFirst()
+                                    .orElse(null));
+
+                    String hostName = null;
+                    String hostAvatarUrl = null;
+                    if (p.getHost().getProfile() != null) {
+                        hostName = p.getHost().getProfile().getFullName();
+                        hostAvatarUrl = p.getHost().getProfile().getAvatarUrl();
+                    }
+
+                    return AdminPropertyResponse.builder()
+                            .id(p.getId())
+                            .thumbnailUrl(thumbUrl)
+                            .name(p.getName())
+                            .slug(p.getSlug())
+                            .hostName(hostName)
+                            .hostAvatarUrl(hostAvatarUrl)
+                            .hostEmail(p.getHost().getEmail())
+                            .categoryName(p.getCategory().getName())
+                            .province(p.getProvince())
+                            .district(p.getDistrict())
+                            .status(p.getStatus().name())
+                            .createdAt(p.getCreatedAt())
+                            .build();
+                })
+                .toList();
+
+        return PageResponse.<AdminPropertyResponse>builder()
+                .pageNo(propertyPage.getNumber() + 1)
+                .pageSize(propertyPage.getSize())
+                .totalPage(propertyPage.getTotalPages())
+                .totalElements(propertyPage.getTotalElements())
+                .items(responses)
+                .build();
+    }
+
+    @Override
     public List<RoomPriceResponse> calculatePriceForProperty(String slug, LocalDate checkInDate, LocalDate checkOutDate, List<Long> roomIds) {
         Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở"));
@@ -528,7 +591,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void reviewProperty(Long propertyId, com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest request) {
+    public void reviewProperty(Long propertyId, PropertyApprovalRequest request) {
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài đăng!"));
 

@@ -93,6 +93,20 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", properties));
     }
 
+    @Operation(summary = "ADMIN - Lấy danh sách tất cả bài đăng của các Host đã được duyệt")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin")
+    public ResponseEntity<ResponseData<PageResponse<AdminPropertyResponse>>> getPropertiesForAdmin(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        PageResponse<AdminPropertyResponse> response = propertyService.getPropertiesForAdmin(status, pageNo, pageSize, sortBy, sortDir);
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách bài đăng thành công", response));
+    }
+
     @Operation(summary = "GUEST_USER - Xem chi tiết bài đăng dựa trên slug")
     @GetMapping("/{slug}")
     public ResponseEntity<ResponseData<PropertyDetailResponse>> getPropertyDetail(
@@ -158,7 +172,7 @@ public class PropertyController {
     }
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @Operation(summary = "ADMIN - Duyệt bài đăng của host")
+    @Operation(summary = "ADMIN - Thẩm định bài đăng của host")
     @PutMapping("/admin/{propertyId}/review")
     public ResponseEntity<ResponseData<String>> reviewProperty(
             @PathVariable Long propertyId,

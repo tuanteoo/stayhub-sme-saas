@@ -164,7 +164,7 @@ public class FinanceController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", response));
     }
 
-    @Operation(summary = "ADMIN - Duyệt/Từ chối lệnh rút tiền của Chủ nhà")
+    @Operation(summary = "ADMIN - Thẩm định lệnh rút tiền của Chủ nhà")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PutMapping("admin/payouts/{payoutId}")
     public ResponseEntity<ResponseData<String>> processPayout(

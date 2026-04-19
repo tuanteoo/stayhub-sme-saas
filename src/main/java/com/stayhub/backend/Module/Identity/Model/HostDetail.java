@@ -1,6 +1,5 @@
 package com.stayhub.backend.Module.Identity.Model;
 
-import com.stayhub.backend.Common.Model.AbstractEntity;
 import com.stayhub.backend.Common.Util.HostOnboardingStatus;
 import jakarta.persistence.*;
 import lombok.*;

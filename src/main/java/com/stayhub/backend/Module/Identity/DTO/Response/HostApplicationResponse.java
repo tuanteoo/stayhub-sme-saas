@@ -9,6 +9,7 @@ public record HostApplicationResponse(
         Long hostId,
         String hostCode,
         String fullName,
+        String hostAvatarUrl,
         String email,
         String businessPhone,
         String supportEmail,

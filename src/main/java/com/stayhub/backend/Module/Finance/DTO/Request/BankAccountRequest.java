@@ -8,17 +8,17 @@ import lombok.Builder;
 @Builder
 public record BankAccountRequest(
 
-        @Schema(description = "Mã ngân hàng", example = "VCB")
+        @Schema(description = "Mã ngân hàng (chỉ chứa chữ IN HOA và số)", example = "VCB")
         @NotBlank(message = "Mã ngân hàng không được để trống")
         @Pattern(regexp = "^[A-Z0-9]+$", message = "Mã ngân hàng chỉ chứa chữ IN HOA và số, không có khoảng trắng")
         String bankCode,
 
-        @Schema(description = "Số tài khoản", example = "123456789")
+        @Schema(description = "Số tài khoản (chỉ chứa số, 6-20 ký tự)", example = "123456789")
         @Pattern(regexp = "^[0-9]{6,20}$", message = "Số tài khoản không hợp lệ (Chỉ chứa số, từ 6-20 ký tự)")
         @NotBlank(message = "Số tài khoản không được để trống")
         String accountNumber,
 
-        @Schema(description = "Tên chủ tài khoản", example = "Nguyen Van A")
+        @Schema(description = "Tên chủ tài khoản (viết hoa, không dấu, không ký tự đặc biệt)", example = "Nguyen Van A")
         @NotBlank(message = "Tên chủ tài khoản không được để trống")
         @Pattern(regexp = "^[A-Z\\s]+$", message = "Tên chủ tài khoản phải VIẾT HOA, KHÔNG DẤU và không chứa ký tự đặc biệt")
         String accountHolderName,

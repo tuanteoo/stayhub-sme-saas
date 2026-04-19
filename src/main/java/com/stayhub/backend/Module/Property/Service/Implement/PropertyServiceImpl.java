@@ -283,8 +283,8 @@ public class PropertyServiceImpl implements PropertyService {
             );
         }).toList();
         return PageResponse.<HostPropertyResponse>builder()
-                .pageNo(page)
-                .pageSize(size)
+                .pageNo(propertyPage.getNumber() + 1)
+                .pageSize(propertyPage.getSize())
                 .totalPage(propertyPage.getTotalPages())
                 .totalElements(propertyPage.getTotalElements())
                 .items(responses)
@@ -322,8 +322,8 @@ public class PropertyServiceImpl implements PropertyService {
         List<PropertyCardResponse> cardResponses = propertyPage.stream().map(this::mapToPropertyCardResponse).toList();
 
         return PageResponse.<PropertyCardResponse>builder()
-                .pageNo(page)
-                .pageSize(size)
+                .pageNo(propertyPage.getNumber() + 1)
+                .pageSize(propertyPage.getSize())
                 .totalPage(propertyPage.getTotalPages())
                 .totalElements(propertyPage.getTotalElements())
                 .items(cardResponses)

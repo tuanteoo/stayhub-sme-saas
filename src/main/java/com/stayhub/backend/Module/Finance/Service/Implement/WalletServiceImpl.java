@@ -8,6 +8,7 @@ import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Finance.DTO.Request.PayoutCreateRequest;
 import com.stayhub.backend.Module.Finance.DTO.Request.PayoutProcessRequest;
+import com.stayhub.backend.Module.Finance.DTO.Response.PayoutResponse;
 import com.stayhub.backend.Module.Finance.DTO.Response.TransactionResponse;
 import com.stayhub.backend.Module.Finance.DTO.Response.WalletResponse;
 import com.stayhub.backend.Module.Finance.Model.*;
@@ -129,7 +130,7 @@ public class WalletServiceImpl implements WalletService {
                 .toList();
 
         return PageResponse.<TransactionResponse>builder()
-                .pageNo(validPage)
+                .pageNo(transactionPage.getNumber() + 1)
                 .pageSize(transactionPage.getSize())
                 .totalPage(transactionPage.getTotalPages())
                 .totalElements(transactionPage.getTotalElements())
@@ -299,5 +300,47 @@ public class WalletServiceImpl implements WalletService {
         transactionRepository.save(trans);
 
         return request.isApproved() ? "Lệnh rút tiền đã được duyệt thành công." : "Lệnh rút tiền đã bị từ chối. Số tiền đã được hoàn lại vào ví khả dụng.";
+    }
+
+    @Override
+    public PageResponse<PayoutResponse> getAllPayoutsForAdmin(String status, int page, int size, String sortBy, String sortDir) {
+        Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
+        Page<Payout> payoutPage;
+
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                PayoutStatus payoutStatus = PayoutStatus.valueOf(status.toUpperCase());
+                payoutPage = payoutRepository.findByStatus(payoutStatus, pageable);
+            } catch (IllegalArgumentException e) {
+                throw new InvalidDataException("Trạng thái rút tiền không hợp lệ.");
+            }
+        } else {
+            payoutPage = payoutRepository.findAll(pageable);
+        }
+
+        List<PayoutResponse> responses = payoutPage.getContent().stream()
+                .map(p -> PayoutResponse.builder()
+                        .id(p.getId())
+                        .hostEmail(p.getUser().getEmail())
+                        .hostName(p.getUser().getProfile() != null ? p.getUser().getProfile().getFullName() : null)
+                        .amount(p.getAmount())
+                        .bankCode(p.getBankCode())
+                        .accountNumber(p.getAccountNumber())
+                        .accountHolderName(p.getAccountHolderName())
+                        .status(p.getStatus().name())
+                        .adminNote(p.getAdminNote())
+                        .bankTransactionRef(p.getBankTransactionRef())
+                        .createdAt(p.getCreatedAt())
+                        .processedAt(p.getProcessedAt())
+                        .build())
+                .toList();
+
+        return PageResponse.<PayoutResponse>builder()
+                .pageNo(payoutPage.getNumber() + 1)
+                .pageSize(payoutPage.getSize())
+                .totalPage(payoutPage.getTotalPages())
+                .totalElements(payoutPage.getTotalElements())
+                .items(responses)
+                .build();
     }
 }

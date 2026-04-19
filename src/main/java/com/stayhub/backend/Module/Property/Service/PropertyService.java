@@ -3,6 +3,7 @@ package com.stayhub.backend.Module.Property.Service;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
+import com.stayhub.backend.Module.Property.Model.Property;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,4 +17,5 @@ public interface PropertyService {
     void approveFirstPendingPropertyByHost(Long id);
     void reviewProperty(Long propertyId, com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest request);
     List<PropertyCardResponse> getTopPropertiesByCategorySlug(String categorySlug);
+    PropertyDetailResponse convertToDetailResponse(Property property, LocalDate checkInDate, LocalDate checkOutDate);
 }

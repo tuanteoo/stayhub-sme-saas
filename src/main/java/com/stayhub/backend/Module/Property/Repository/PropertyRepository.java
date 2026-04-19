@@ -43,4 +43,6 @@ public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpe
             @Param("checkOutDate") LocalDate checkOutDate,
             Pageable pageable
     );
+
+    Optional<Property> findFirstByHostIdOrderByCreatedAtAsc(Long hostId);
 }

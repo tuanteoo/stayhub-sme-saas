@@ -336,6 +336,11 @@ public class PropertyServiceImpl implements PropertyService {
         Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở này hoặc bài đăng chưa được duyệt!"));
 
+        return convertToDetailResponse(property, checkInDate, checkOutDate);
+    }
+
+    @Override
+    public PropertyDetailResponse convertToDetailResponse(Property property, LocalDate checkInDate, LocalDate checkOutDate) {
         User host = property.getHost();
         String hostName = host.getEmail();
         String avatarUrl = null;
@@ -376,7 +381,6 @@ public class PropertyServiceImpl implements PropertyService {
         int totalBeds = property.getRooms().stream().mapToInt(r -> r.getNumBeds() != null ? r.getNumBeds() : 0).sum();
         int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
 
-        // Lấy hệ số phụ thu cuối tuần của Property
         int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
         BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, HALF_UP);
 

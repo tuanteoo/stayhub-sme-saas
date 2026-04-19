@@ -6,6 +6,7 @@ import com.stayhub.backend.Module.Finance.DTO.Request.BankAccountRequest;
 import com.stayhub.backend.Module.Finance.DTO.Request.PayoutProcessRequest;
 import com.stayhub.backend.Module.Finance.DTO.Response.BankAccountResponse;
 import com.stayhub.backend.Module.Finance.DTO.Request.PayoutCreateRequest;
+import com.stayhub.backend.Module.Finance.DTO.Response.PayoutResponse;
 import com.stayhub.backend.Module.Finance.DTO.Response.TransactionResponse;
 import com.stayhub.backend.Module.Finance.DTO.Response.WalletResponse;
 import com.stayhub.backend.Module.Finance.Service.BankAccountService;
@@ -146,6 +147,21 @@ public class FinanceController {
         walletService.createPayoutRequest(userDetails.getUser().getId(), request);
 
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.CREATED.value(), "Tạo lệnh rút tiền thành công. Vui lòng chờ Admin phê duyệt."));
+    }
+
+    @Operation(summary = "ADMIN - Lấy danh sách yêu cầu rút tiền")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("admin/payouts")
+    public ResponseEntity<ResponseData<PageResponse<PayoutResponse>>> getAllPayouts(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        PageResponse<PayoutResponse> response = walletService.getAllPayoutsForAdmin(status, pageNo, pageSize, sortBy, sortDir);
+
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", response));
     }
 
     @Operation(summary = "ADMIN - Duyệt/Từ chối lệnh rút tiền của Chủ nhà")

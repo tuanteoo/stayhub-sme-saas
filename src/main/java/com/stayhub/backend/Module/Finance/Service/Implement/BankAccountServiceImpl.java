@@ -1,5 +1,6 @@
 package com.stayhub.backend.Module.Finance.Service.Implement;
 
+import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Module.Finance.DTO.Request.BankAccountRequest;
 import com.stayhub.backend.Module.Finance.DTO.Response.BankAccountResponse;
@@ -28,6 +29,13 @@ public class BankAccountServiceImpl implements BankAccountService {
         User user = userRepository.findById(userId).
                 orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
+        if (bankAccountRepository.existsByAccountNumberAndBankCode(request.accountNumber(), request.bankCode())) {
+            throw new InvalidDataException(
+                    "Số tài khoản này tại ngân hàng " + request.bankCode() + " đã tồn tại trên hệ thống. " +
+                            "Vui lòng sử dụng tài khoản khác hoặc liên hệ Admin nếu có nhầm lẫn."
+            );
+        }
+
         if (Boolean.TRUE.equals(request.isDefault())) {
             List<BankAccount> existing = bankAccountRepository.findByUser_Id(userId);
             existing.forEach(b -> b.setIsDefault(false));
@@ -36,10 +44,10 @@ public class BankAccountServiceImpl implements BankAccountService {
 
         BankAccount bankAccount = BankAccount.builder()
                 .user(user)
-                .bankName(request.bankName())
+                .bankCode(request.bankCode())
                 .accountNumber(request.accountNumber())
                 .accountHolderName(request.accountHolderName())
-                .branch(request.bankName())
+                .branch(request.bankCode())
                 .isDefault(request.isDefault() != null ? request.isDefault() : false)
                 .isVerified(true)
                 .build();
@@ -54,7 +62,7 @@ public class BankAccountServiceImpl implements BankAccountService {
         return bankAccounts.stream()
                 .map(bank -> BankAccountResponse.builder()
                         .id(bank.getId())
-                        .bankName(bank.getBankName())
+                        .bankCode(bank.getBankCode())
                         .accountNumber(bank.getAccountNumber())
                         .accountHolderName(bank.getAccountHolderName())
                         .branchBank(bank.getBranch())

@@ -5,7 +5,7 @@ import lombok.Builder;
 @Builder
 public record BankAccountResponse(
         Integer id,
-        String bankName,
+        String bankCode,
         String accountNumber,
         String accountHolderName,
         String branchBank,

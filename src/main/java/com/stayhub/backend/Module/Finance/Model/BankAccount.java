@@ -23,8 +23,8 @@ public class BankAccount {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "bank_name", length = 100, nullable = false)
-    private String bankName;
+    @Column(name = "bank_code", length = 100, nullable = false)
+    private String bankCode;
 
     @Column(name = "account_number", length = 50, nullable = false)
     private String accountNumber;

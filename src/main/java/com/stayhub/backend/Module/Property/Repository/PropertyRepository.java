@@ -1,5 +1,6 @@
 package com.stayhub.backend.Module.Property.Repository;
 
+import com.stayhub.backend.Common.Util.HostOnboardingStatus;
 import com.stayhub.backend.Common.Util.PropertyStatus;
 import com.stayhub.backend.Module.Property.Model.Property;
 import org.springframework.data.domain.Page;
@@ -47,11 +48,14 @@ public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpe
 
     Optional<Property> findFirstByHostIdOrderByCreatedAtAsc(Long hostId);
 
-    @EntityGraph(attributePaths = {"host", "host.profile", "host.hostDetail", "category", "images"})
+    @EntityGraph(attributePaths = {"host", "host.profile", "host.hostDetail", "category"})
     @Query("SELECT p FROM Property p " +
             "JOIN p.host u " +
             "JOIN u.hostDetail hd " +
-            "WHERE hd.onboardingStatus = com.stayhub.backend.Common.Util.HostOnboardingStatus.APPROVED " +
+            "WHERE hd.onboardingStatus = :onboardingStatus " +
             "AND (:status IS NULL OR p.status = :status)")
-    Page<Property> findAllByApprovedHosts(@Param("status") PropertyStatus status, Pageable pageable);
+    Page<Property> findAllByOnboardingStatusAndPropertyStatus(
+            @Param("onboardingStatus") HostOnboardingStatus onboardingStatus,
+            @Param("status") PropertyStatus status,
+            Pageable pageable);
 }

@@ -272,6 +272,7 @@ public class WalletServiceImpl implements WalletService {
 
             payout.setStatus(PayoutStatus.COMPLETED);
             payout.setBankTransactionRef(request.bankTransactionRef());
+            payout.setProofImageUrl(request.proofImageUrl());
             payout.setAdminNote(request.adminNote());
             payout.setProcessedAt(LocalDateTime.now());
 

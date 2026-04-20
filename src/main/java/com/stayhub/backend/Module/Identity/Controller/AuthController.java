@@ -160,4 +160,17 @@ public class AuthController {
         return ResponseEntity.ok(new ResponseData<>(200, message));
     }
 
+    @Operation(summary = "Yêu cầu đặt lại mật khẩu")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ResponseData<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.processForgotPassword(request);
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.CREATED.value(), "Vui lòng kiểm tra email để đặt lại mật khẩu"));
+    }
+
+    @Operation(summary = "Đặt lại mật khẩu mới")
+    @PostMapping("/reset-password")
+    public ResponseEntity<ResponseData<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Đặt lại mật khẩu thành công"));
+    }
 }

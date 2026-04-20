@@ -143,4 +143,32 @@ public class EmailServiceImpl implements EmailService {
             throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
         }
     }
+
+    @Async("emailTaskExecutor")
+    @Override
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        try {
+            String resetUrl = frontendUrl + "/reset-password?token=" + token;
+
+            Context context = new Context();
+            context.setVariable("resetUrl", resetUrl);
+            context.setVariable("email", toEmail);
+
+            String htmlContent = templateEngine.process("email/forgot-password", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail, "StayHub Support");
+            helper.setTo(toEmail);
+            helper.setSubject("Yêu cầu đặt lại mật khẩu - StayHub");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Đã gửi email đặt lại mật khẩu thành công đến: {}", toEmail);
+
+        } catch (Exception e) {
+            log.error("Lỗi khi gửi email đặt lại mật khẩu đến {}: {}", toEmail, e.getMessage());
+        }
+    }
 }

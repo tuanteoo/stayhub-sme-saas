@@ -1,9 +1,6 @@
 package com.stayhub.backend.Module.Identity.Service;
 
-import com.stayhub.backend.Module.Identity.DTO.Request.LoginRequest;
-import com.stayhub.backend.Module.Identity.DTO.Request.LogoutRequest;
-import com.stayhub.backend.Module.Identity.DTO.Request.RefreshTokenRequest;
-import com.stayhub.backend.Module.Identity.DTO.Request.RegisterGuestRequest;
+import com.stayhub.backend.Module.Identity.DTO.Request.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
 
@@ -13,4 +10,6 @@ public interface AuthService {
     LoginResponse login(LoginRequest request);
     void logout(LogoutRequest request);
     TokenRefreshResponse refreshToken(RefreshTokenRequest request);
+    void processForgotPassword(ForgotPasswordRequest request);
+    void resetPassword(ResetPasswordRequest request);
 }

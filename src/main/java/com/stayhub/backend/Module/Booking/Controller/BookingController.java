@@ -12,6 +12,7 @@ import com.stayhub.backend.Module.Booking.Service.BookingService;
 import com.stayhub.backend.Module.Booking.Service.DisputeService;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -145,6 +146,10 @@ public class BookingController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/admin/disputes")
     public ResponseEntity<ResponseData<PageResponse<DisputeAdminResponse>>> getDisputesForAdmin(
+            @Parameter(
+                    name = "status",
+                    description = "Lọc theo trạng thái (OPEN, IN_PROGRESS, RESOLVED, CLOSED)"
+            )
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,

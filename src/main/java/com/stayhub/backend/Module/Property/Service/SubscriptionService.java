@@ -1,5 +1,6 @@
 package com.stayhub.backend.Module.Property.Service;
 
+import com.stayhub.backend.Module.Property.DTO.Request.SubscriptionPlanRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.MySubscriptionResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.SubscriptionPlanResponse;
 
@@ -9,4 +10,6 @@ public interface SubscriptionService {
     MySubscriptionResponse getMySubscription(Long hostId);
     List<SubscriptionPlanResponse> getActiveSubscriptionPlans();
     void processSubscriptionPurchase(Long hostId, Long newPlanId);
+    List<SubscriptionPlanResponse> getAllSubscriptionPlans();
+//    SubscriptionPlanResponse createSubscriptionPlan(SubscriptionPlanRequest request);
 }

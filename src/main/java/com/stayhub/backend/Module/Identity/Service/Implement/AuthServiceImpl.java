@@ -258,7 +258,7 @@ public class AuthServiceImpl implements AuthService {
 
         verificationTokenRepository.save(verificationToken);
 
-        emailService.sendPasswordResetEmail(user.getEmail(), token);
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getProfile().getFullName(), token);
     }
 
     @Transactional(rollbackFor = Exception.class)

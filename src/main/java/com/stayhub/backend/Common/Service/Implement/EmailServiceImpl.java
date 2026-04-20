@@ -146,13 +146,13 @@ public class EmailServiceImpl implements EmailService {
 
     @Async("emailTaskExecutor")
     @Override
-    public void sendPasswordResetEmail(String toEmail, String token) {
+    public void sendPasswordResetEmail(String toEmail, String guestName, String token) {
         try {
             String resetUrl = frontendUrl + "/reset-password?token=" + token;
 
             Context context = new Context();
             context.setVariable("resetUrl", resetUrl);
-            context.setVariable("email", toEmail);
+            context.setVariable("fullName", guestName);
 
             String htmlContent = templateEngine.process("email/forgot-password", context);
 

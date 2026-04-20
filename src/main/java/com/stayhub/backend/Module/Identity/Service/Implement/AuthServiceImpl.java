@@ -1,15 +1,14 @@
 package com.stayhub.backend.Module.Identity.Service.Implement;
 
+import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
-import com.stayhub.backend.Common.Util.ErrorCode;
-import com.stayhub.backend.Common.Util.StringUtil;
-import com.stayhub.backend.Common.Util.UserStatus;
-import com.stayhub.backend.Common.Util.VerificationType;
+import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Identity.DTO.Request.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.UserAdminResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.UserProfileResponse;
 import com.stayhub.backend.Module.Identity.Model.*;
 import com.stayhub.backend.Module.Identity.Repository.*;
@@ -21,6 +20,8 @@ import com.stayhub.backend.Common.Service.EmailService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -421,5 +422,49 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.deleteByUser(user);
 
         log.info("Người dùng ID {} đã thay đổi mật khẩu và bị thu hồi các phiên đăng nhập cũ.", userId);
+    }
+
+    @Override
+    public PageResponse<UserAdminResponse> getUsersForAdmin(String status, int pageNo, int pageSize, String sortBy, String sortDir) {
+        Pageable pageable = PaginationUtil.getPageable(pageNo, pageSize, sortBy, sortDir, "createdAt");
+
+        UserStatus userStatus = null;
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                userStatus = UserStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new InvalidDataException("Trạng thái người dùng không hợp lệ.");
+            }
+        }
+
+        Page<User> userPage = userRepository.findAllUsersForAdmin(userStatus, pageable);
+
+        List<UserAdminResponse> responses = userPage.getContent().stream()
+                .map(user -> {
+                    List<String> roleNames = user.getRoles().stream()
+                            .map(Role::getName)
+                            .toList();
+
+                    return UserAdminResponse.builder()
+                            .id(user.getId())
+                            .email(user.getEmail())
+                            .fullName(user.getProfile() != null ? user.getProfile().getFullName() : "N/A")
+                            .phoneNumber(user.getProfile() != null ? user.getProfile().getPhoneNumber() : "N/A")
+                            .avatarUrl(user.getProfile() != null ? user.getProfile().getAvatarUrl() : null)
+                            .roles(roleNames)
+                            .status(user.getStatus().name())
+                            .lastLoginAt(user.getLastLoginAt())
+                            .createdAt(user.getCreatedAt())
+                            .build();
+                })
+                .toList();
+
+        return PageResponse.<UserAdminResponse>builder()
+                .pageNo(userPage.getNumber() + 1)
+                .pageSize(userPage.getSize())
+                .totalPage(userPage.getTotalPages())
+                .totalElements(userPage.getTotalElements())
+                .items(responses)
+                .build();
     }
 }

@@ -21,4 +21,14 @@ public class StringUtil {
 
         return noAccents.toLowerCase().replaceAll("[^a-z0-9]", "");
     }
+
+    public static String maskString(String input, int startKeep, int endKeep) {
+        if (input == null || input.length() <= (startKeep + endKeep)) {
+            return input;
+        }
+        String start = input.substring(0, startKeep);
+        String end = input.substring(input.length() - endKeep);
+        String masked = "*".repeat(input.length() - startKeep - endKeep);
+        return start + masked + end;
+    }
 }

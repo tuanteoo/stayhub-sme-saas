@@ -3,10 +3,7 @@ package com.stayhub.backend.Module.Identity.Controller;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.DTO.Request.*;
-import com.stayhub.backend.Module.Identity.DTO.Response.HostApplicationDetailResponse;
-import com.stayhub.backend.Module.Identity.DTO.Response.HostApplicationResponse;
-import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
-import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Module.Identity.Service.HostOnboardingService;
@@ -172,5 +169,37 @@ public class AuthController {
     public ResponseEntity<ResponseData<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Đặt lại mật khẩu thành công"));
+    }
+
+    @Operation(summary = "USER/HOST - Lấy thông tin hồ sơ cá nhân")
+    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_HOST')")
+    @GetMapping("/profiles")
+    public ResponseEntity<ResponseData<UserProfileResponse>> getMyProfile(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        UserProfileResponse response = authService.getMyProfile(userDetails.getUser().getId());
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy thông tin cá nhân thành công", response));
+    }
+
+    @Operation(summary = "USER - Cập nhật thông tin hồ sơ cá nhân")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    @PutMapping("/user/profiles")
+    public ResponseEntity<ResponseData<Void>> updateProfile(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody UpdateUserProfileRequest request) {
+
+        authService.updateUserProfile(userDetails.getUser().getId(), request);
+        return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật thông tin thành công", null));
+    }
+
+    @Operation(summary = "HOST - Cập nhật thông tin cá nhân")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @PutMapping("/host/profiles")
+    public ResponseEntity<ResponseData<Void>> updateHostContact(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody UpdateHostProfileRequest request) {
+
+        authService.updateHostProfile(userDetails.getUser().getId(), request);
+        return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật thông tin liên hệ kinh doanh thành công", null));
     }
 }

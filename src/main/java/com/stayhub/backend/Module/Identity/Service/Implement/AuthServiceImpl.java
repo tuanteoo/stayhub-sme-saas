@@ -4,12 +4,13 @@ import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.ErrorCode;
+import com.stayhub.backend.Common.Util.StringUtil;
 import com.stayhub.backend.Common.Util.UserStatus;
 import com.stayhub.backend.Common.Util.VerificationType;
 import com.stayhub.backend.Module.Identity.DTO.Request.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
-import com.stayhub.backend.Module.Identity.DTO.Response.UserInfResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.UserProfileResponse;
 import com.stayhub.backend.Module.Identity.Model.*;
 import com.stayhub.backend.Module.Identity.Repository.*;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -52,6 +54,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final CustomUserDetailsService customUserDetailsService;
+    private final HostDetailRepository hostDetailRepository;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -160,11 +163,11 @@ public class AuthServiceImpl implements AuthService {
         }
 
         Profile profile = profileRepository.findByUserId(user.getId()).orElse(new Profile());
-        UserInfResponse userInfResponse = new UserInfResponse(
-                user.getEmail(),
-                profile.getFullName(),
-                profile.getAvatarUrl()
-        );
+        UserProfileResponse userInfResponse = UserProfileResponse.builder()
+                .email(user.getEmail())
+                .avatarUrl(user.getProfile().getAvatarUrl())
+                .fullName(user.getProfile().getFullName())
+                .build();
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -280,5 +283,118 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         verificationTokenRepository.delete(verificationToken);
+    }
+
+    @Override
+    public UserProfileResponse getMyProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng"));
+
+        Profile profile = user.getProfile();
+        HostDetail hostDetail = user.getHostDetail();
+
+        String hostCode = null;
+        String maskedIdCard = null;
+        String maskedBusinessLicense = null;
+        String businessPhone = null;
+        String supportEmail = null;
+        String onboardingStatus = null;
+        LocalDateTime joinedAt = user.getCreatedAt();
+
+        if (hostDetail != null) {
+            hostCode = hostDetail.getHostCode();
+            businessPhone = hostDetail.getBusinessPhone();
+            supportEmail = hostDetail.getSupportEmail();
+            onboardingStatus = hostDetail.getOnboardingStatus() != null ? hostDetail.getOnboardingStatus().name() : null;
+            joinedAt = hostDetail.getCreatedAt();
+
+            maskedIdCard = StringUtil.maskString(hostDetail.getIdentityCardNumber(), 4, 3);
+            maskedBusinessLicense = StringUtil.maskString(hostDetail.getBusinessLicenseNumber(), 3, 3);
+        }
+
+        return UserProfileResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(profile.getFullName())
+                .phoneNumber(profile.getPhoneNumber())
+                .avatarUrl(profile.getAvatarUrl())
+                .gender(profile.getGender())
+                .dateOfBirth(profile.getDob())
+                .addressDetail(profile.getAddressDetail())
+                .bio(profile.getBio())
+
+                .hostCode(hostCode)
+                .businessPhone(businessPhone)
+                .supportEmail(supportEmail)
+                .onboardingStatus(onboardingStatus)
+                .maskedIdentityCard(maskedIdCard)
+                .maskedBusinessLicense(maskedBusinessLicense)
+                .joinedAt(joinedAt)
+                .build();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void updateUserProfile(Long userId, UpdateUserProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng"));
+
+        Profile profile = user.getProfile();
+
+        if (profile == null) {
+            profile = new Profile();
+            profile.setUser(user);
+        }
+
+        if (request.fullName() != null) {
+            profile.setFullName(request.fullName());
+        }
+        if (request.phoneNumber() != null) {
+            profile.setPhoneNumber(request.phoneNumber());
+        }
+        if (request.avatarUrl() != null) {
+            profile.setAvatarUrl(request.avatarUrl());
+        }
+        if (request.gender() != null) {
+            profile.setGender(request.gender());
+        }
+        if (request.dateOfBirth() != null) {
+            profile.setDob(request.dateOfBirth());
+        }
+        if (request.address() != null) {
+            profile.setAddressDetail(request.address());
+        }
+        if (request.bio() != null) {
+            profile.setBio(request.bio());
+        }
+
+        profileRepository.save(profile);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void updateHostProfile(Long userId, UpdateHostProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng"));
+
+        if (user.getHostDetail() == null) {
+            throw new InvalidDataException("Tài khoản của bạn chưa được đăng ký làm Chủ nhà.");
+        }
+
+        if (request.businessPhone() != null && !request.businessPhone().isBlank()) {
+            user.getHostDetail().setBusinessPhone(request.businessPhone());
+        }
+
+        if (request.supportEmail() != null && !request.supportEmail().isBlank()) {
+            user.getHostDetail().setSupportEmail(request.supportEmail());
+        }
+
+        hostDetailRepository.save(user.getHostDetail());
+
+        if (request.updateProfileRequest() != null) {
+            this.updateUserProfile(userId, request.updateProfileRequest());
+        }
+
+        log.info("Chủ nhà ID {} đã cập nhật thông tin hồ sơ thành công", userId);
     }
 }

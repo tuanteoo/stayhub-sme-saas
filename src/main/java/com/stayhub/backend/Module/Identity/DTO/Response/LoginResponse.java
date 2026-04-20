@@ -7,5 +7,5 @@ public record LoginResponse(
         String refreshToken,
         List<String> roles,
         String status,
-        UserInfResponse userInfResponse
+        UserProfileResponse userInfResponse
 ) { }

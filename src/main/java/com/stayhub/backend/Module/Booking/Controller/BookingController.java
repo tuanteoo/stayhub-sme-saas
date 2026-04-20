@@ -5,6 +5,7 @@ import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
 import com.stayhub.backend.Module.Booking.DTO.Request.DisputeCreateRequest;
 import com.stayhub.backend.Module.Booking.DTO.Response.BookingResponse;
+import com.stayhub.backend.Module.Booking.DTO.Response.DisputeAdminResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.GuestBookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.HostBookingResponse;
 import com.stayhub.backend.Module.Booking.Service.BookingService;
@@ -138,5 +139,19 @@ public class BookingController {
         String message = disputeService.createDispute(userDetails.getUser().getId(), bookingCode, request);
 
         return ResponseEntity.ok(new ResponseData<>(201, message));
+    }
+
+    @Operation(summary = "ADMIN - Lấy danh sách khiếu nại")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/disputes")
+    public ResponseEntity<ResponseData<PageResponse<DisputeAdminResponse>>> getDisputesForAdmin(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        PageResponse<DisputeAdminResponse> response = disputeService.getDisputesForAdmin(status, pageNo, pageSize, sortBy, sortDir);
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách khiếu nại thành công", response));
     }
 }

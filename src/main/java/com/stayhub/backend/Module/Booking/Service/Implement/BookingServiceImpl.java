@@ -456,7 +456,6 @@ public class BookingServiceImpl implements BookingService {
         return "Tuyệt vời! Chuyến đi đã hoàn tất. Cảm ơn bạn đã sử dụng StayHub.";
     }
 
-
     private HostBookingResponse mapToHostBookingResponse(Booking booking) {
 
         BigDecimal total = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;

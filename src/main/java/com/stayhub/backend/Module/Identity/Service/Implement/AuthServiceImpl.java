@@ -1,13 +1,12 @@
 package com.stayhub.backend.Module.Identity.Service.Implement;
 
 import com.stayhub.backend.Common.Exception.AppException;
+import com.stayhub.backend.Common.Exception.InvalidDataException;
+import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.ErrorCode;
 import com.stayhub.backend.Common.Util.UserStatus;
 import com.stayhub.backend.Common.Util.VerificationType;
-import com.stayhub.backend.Module.Identity.DTO.Request.LoginRequest;
-import com.stayhub.backend.Module.Identity.DTO.Request.LogoutRequest;
-import com.stayhub.backend.Module.Identity.DTO.Request.RefreshTokenRequest;
-import com.stayhub.backend.Module.Identity.DTO.Request.RegisterGuestRequest;
+import com.stayhub.backend.Module.Identity.DTO.Request.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.UserInfResponse;
@@ -46,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final ProfileRepository profileRepository;
-    private final VerificationTokenRepository tokenRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
@@ -102,7 +101,7 @@ public class AuthServiceImpl implements AuthService {
                 .type(VerificationType.REGISTER)
                 .expiryDate(LocalDateTime.now().plusHours(24))
                 .build();
-        tokenRepository.save(verificationToken);
+        verificationTokenRepository.save(verificationToken);
 
         emailService.sendVerificationEmailAsync(
                 user.getEmail(),
@@ -116,7 +115,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String verifyEmailToken(String token) {
-        VerificationToken verificationToken = tokenRepository.findByTokenAndType(token, VerificationType.REGISTER)
+        VerificationToken verificationToken = verificationTokenRepository.findByTokenAndType(token, VerificationType.REGISTER)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_TOKEN));
 
         if (verificationToken.getConfirmedAt() != null) {
@@ -132,11 +131,10 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         verificationToken.setConfirmedAt(LocalDateTime.now());
-        tokenRepository.save(verificationToken);
+        verificationTokenRepository.save(verificationToken);
 
         return "Xác thực tài khoản thành công. Bạn có thể đăng nhập ngay bây giờ.";
     }
-
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -242,5 +240,45 @@ public class AuthServiceImpl implements AuthService {
                     return new TokenRefreshResponse(newAccessToken, requestRefreshToken);
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh Token không hợp lệ hoặc không tồn tại trong hệ thống."));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void processForgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản với email này"));
+
+        String token = UUID.randomUUID().toString();
+        VerificationToken verificationToken = VerificationToken.builder()
+                .token(token)
+                .user(user)
+                .type(VerificationType.FORGOT_PASSWORD)
+                .expiryDate(LocalDateTime.now().plusMinutes(15))
+                .build();
+
+        verificationTokenRepository.save(verificationToken);
+
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        VerificationToken verificationToken = verificationTokenRepository.findByTokenAndType(request.token(), VerificationType.FORGOT_PASSWORD)
+                .orElseThrow(() -> new InvalidDataException("Mã xác thực không hợp lệ hoặc không tồn tại"));
+
+        if (verificationToken.getType() != VerificationType.FORGOT_PASSWORD) {
+            throw new InvalidDataException("Mã xác thực không đúng định dạng");
+        }
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new InvalidDataException("Mã xác thực đã hết hạn");
+        }
+
+        User user = verificationToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        verificationTokenRepository.delete(verificationToken);
     }
 }

@@ -23,4 +23,5 @@ public interface BookingRepository extends JpaRepository<Booking,Long> {
     Page<Booking> findBookingsByHostId(@Param("hostId") Long hostId, Pageable pageable);
 
     List<Booking> findByStatusAndUpdatedAtBefore(BookingStatus status, LocalDateTime time);
+    List<Booking> findByStatus(BookingStatus status);
 }

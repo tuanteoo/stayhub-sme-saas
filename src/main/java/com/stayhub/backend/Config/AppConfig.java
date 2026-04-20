@@ -48,6 +48,8 @@ public class AppConfig {
                         .requestMatchers(
                                 "/auth/login","/auth/register-guest","/auth/verify-email",
                                 "/auth/refresh-token",
+                                "/auth/forgot-password",
+                                "/auth/reset-password",
                                 "/public/**",
                                 "/payments/vnpay/ipn",
                                 "/v3/api-docs/**",

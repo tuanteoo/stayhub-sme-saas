@@ -189,7 +189,7 @@ public class AuthController {
             @Valid @RequestBody UpdateUserProfileRequest request) {
 
         authService.updateUserProfile(userDetails.getUser().getId(), request);
-        return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật thông tin thành công", null));
+        return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật thông tin thành công"));
     }
 
     @Operation(summary = "HOST - Cập nhật thông tin cá nhân")
@@ -200,6 +200,18 @@ public class AuthController {
             @Valid @RequestBody UpdateHostProfileRequest request) {
 
         authService.updateHostProfile(userDetails.getUser().getId(), request);
-        return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật thông tin liên hệ kinh doanh thành công", null));
+        return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật thông tin liên hệ kinh doanh thành công"));
+    }
+
+    @Operation(summary = "USER/HOST - Đổi mật khẩu")
+    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_HOST')")
+    @PostMapping("/change-password")
+    public ResponseEntity<ResponseData<Void>> changePassword(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest request) {
+
+        authService.changePassword(userDetails.getUser().getId(), request);
+
+        return ResponseEntity.ok(new ResponseData<>(200, "Thay đổi mật khẩu thành công."));
     }
 }

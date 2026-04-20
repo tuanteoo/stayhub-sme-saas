@@ -16,4 +16,5 @@ public interface AuthService {
     UserProfileResponse getMyProfile(Long userId);
     void updateUserProfile(Long userId, UpdateUserProfileRequest request);
     void updateHostProfile(Long userId, UpdateHostProfileRequest request);
+    void changePassword(Long userId, ChangePasswordRequest request);
 }

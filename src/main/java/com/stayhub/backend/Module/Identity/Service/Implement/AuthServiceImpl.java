@@ -397,4 +397,29 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Chủ nhà ID {} đã cập nhật thông tin hồ sơ thành công", userId);
     }
+
+    @Override
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng!"));
+
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+            throw new InvalidDataException("Mật khẩu hiện tại không chính xác.");
+        }
+
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new InvalidDataException("Mật khẩu xác nhận không khớp.");
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPassword())) {
+            throw new InvalidDataException("Mật khẩu mới không được giống mật khẩu hiện tại.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        refreshTokenRepository.deleteByUser(user);
+
+        log.info("Người dùng ID {} đã thay đổi mật khẩu và bị thu hồi các phiên đăng nhập cũ.", userId);
+    }
 }

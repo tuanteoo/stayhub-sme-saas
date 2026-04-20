@@ -148,7 +148,7 @@ public class BookingController {
     public ResponseEntity<ResponseData<PageResponse<DisputeAdminResponse>>> getDisputesForAdmin(
             @Parameter(
                     name = "status",
-                    description = "Lọc theo trạng thái (OPEN, IN_PROGRESS, RESOLVED, CLOSED)"
+                    description = "Lọc theo trạng thái (OPEN, IN_PROGRESS, RESOLVED, CLOSED). Null thì lấy tất cả"
             )
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int pageNo,

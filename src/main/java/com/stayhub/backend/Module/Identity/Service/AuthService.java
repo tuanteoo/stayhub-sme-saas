@@ -1,8 +1,10 @@
 package com.stayhub.backend.Module.Identity.Service;
 
+import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Module.Identity.DTO.Request.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.LoginResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.TokenRefreshResponse;
+import com.stayhub.backend.Module.Identity.DTO.Response.UserAdminResponse;
 import com.stayhub.backend.Module.Identity.DTO.Response.UserProfileResponse;
 
 public interface AuthService {
@@ -17,4 +19,5 @@ public interface AuthService {
     void updateUserProfile(Long userId, UpdateUserProfileRequest request);
     void updateHostProfile(Long userId, UpdateHostProfileRequest request);
     void changePassword(Long userId, ChangePasswordRequest request);
+    PageResponse<UserAdminResponse> getUsersForAdmin(String status, int pageNo, int pageSize, String sortBy, String sortDir);
 }

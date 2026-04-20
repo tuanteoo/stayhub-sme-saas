@@ -214,4 +214,22 @@ public class AuthController {
 
         return ResponseEntity.ok(new ResponseData<>(200, "Thay đổi mật khẩu thành công."));
     }
+
+    @Operation(summary = "Admin - Lấy danh sách toàn bộ người dùng")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/users")
+    public ResponseEntity<ResponseData<PageResponse<UserAdminResponse>>> getUsersForAdmin(
+            @Parameter(
+                    name = "status",
+                    description = "Lọc theo trạng thái (UNVERIFIED, ACTIVE, BANNED, LOCKED). Null thì lấy tất cả"
+            )
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        PageResponse<UserAdminResponse> response = authService.getUsersForAdmin(status, pageNo, pageSize, sortBy, sortDir);
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách người dùng thành công", response));
+    }
 }

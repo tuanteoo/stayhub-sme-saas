@@ -10,6 +10,7 @@ import com.stayhub.backend.Module.Property.Service.CategoryService;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
 import com.stayhub.backend.Module.Property.Service.SubscriptionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -93,10 +94,14 @@ public class PropertyController {
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách thành công", properties));
     }
 
-    @Operation(summary = "ADMIN - Lấy danh sách tất cả bài đăng của các Host đã được duyệt")
+    @Operation(summary = "ADMIN - Lấy danh sách tất cả bài đăng(hồ sơ host đã được chấp thuận)")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/admin")
     public ResponseEntity<ResponseData<PageResponse<AdminPropertyResponse>>> getPropertiesForAdmin(
+            @Parameter(
+                    name = "status",
+                    description = "Trạng thái bài đăng để lọc (DRAFT, PENDING_REVIEW, APPROVED, REJECTED, REQUEST_CHANGES)"
+            )
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
@@ -181,5 +186,13 @@ public class PropertyController {
         propertyService.reviewProperty(propertyId, request);
 
         return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật trạng thái bài đăng thành công", null));
+    }
+
+    @Operation(summary = "ADMIN - Lấy danh sách tất cả các gói cước")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/subscription-plans")
+    public ResponseEntity<ResponseData<List<SubscriptionPlanResponse>>> getAllSubscriptionPlans() {
+        List<SubscriptionPlanResponse> response = subscriptionService.getAllSubscriptionPlans();
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách gói cước thành công", response));
     }
 }

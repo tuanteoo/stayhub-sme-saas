@@ -4,6 +4,7 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.UserSubscriptionStatus;
 import com.stayhub.backend.Module.Identity.Repository.HostDetailRepository;
 import com.stayhub.backend.Module.Identity.Repository.UserRepository;
+import com.stayhub.backend.Module.Property.DTO.Request.SubscriptionPlanRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.MySubscriptionResponse;
 import com.stayhub.backend.Module.Property.DTO.Response.SubscriptionPlanResponse;
 import com.stayhub.backend.Module.Property.Model.SubscriptionPlan;
@@ -93,5 +94,31 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .build();
 
         userSubscriptionRepository.save(newSub);
+    }
+
+    @Override
+    public List<SubscriptionPlanResponse> getAllSubscriptionPlans() {
+        return subscriptionPlanRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+//    @Override
+//    public SubscriptionPlanResponse createSubscriptionPlan(SubscriptionPlanRequest request) {
+//        return null;
+//    }
+
+    private SubscriptionPlanResponse mapToResponse(SubscriptionPlan plan) {
+        return SubscriptionPlanResponse.builder()
+                .id(plan.getId())
+                .tier(plan.getTier())
+                .name(plan.getName())
+                .description(plan.getDescription())
+                .price(plan.getPrice())
+                .maxListings(plan.getMaxListings())
+                .commissionRate(plan.getCommissionRate())
+                .creditLimit(plan.getCreditLimit())
+                .durationMonths(plan.getDurationMonths())
+                .build();
     }
 }

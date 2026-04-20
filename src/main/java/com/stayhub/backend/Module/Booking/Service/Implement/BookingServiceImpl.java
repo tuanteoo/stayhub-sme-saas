@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -443,7 +444,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findByBookingCode(bookingCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
 
-        if (!booking.getUser().getId().equals(guestId)) throw new InvalidDataException("Bạn không có quyền thao tác đơn này.");
+        if (!booking.getUser().getId().equals(guestId)) throw new AuthorizationDeniedException("Bạn không có quyền thao tác đơn này.");
 
         if (booking.getStatus() != BookingStatus.CHECKED_OUT) {
             throw new InvalidDataException("Chỉ có thể hoàn thành khi Chủ nhà đã Check-out.");

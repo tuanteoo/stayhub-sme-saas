@@ -100,7 +100,7 @@ public class PropertyController {
     public ResponseEntity<ResponseData<PageResponse<AdminPropertyResponse>>> getPropertiesForAdmin(
             @Parameter(
                     name = "status",
-                    description = "Trạng thái bài đăng để lọc (DRAFT, PENDING_REVIEW, APPROVED, REJECTED, REQUEST_CHANGES)"
+                    description = "Trạng thái bài đăng để lọc (DRAFT, PENDING_REVIEW, PUBLISHED, HIDDEN, BANNED, REJECTED)"
             )
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int pageNo,

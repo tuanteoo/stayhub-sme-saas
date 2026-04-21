@@ -224,12 +224,17 @@ public class AuthController {
                     description = "Lọc theo trạng thái (UNVERIFIED, ACTIVE, BANNED, LOCKED). Null thì lấy tất cả"
             )
             @RequestParam(required = false) String status,
+            @Parameter(
+                    name = "searchTerm",
+                    description = "Từ khóa tìm kiếm (email, tên)"
+            )
+            @RequestParam(required = false) String searchTerm,
             @RequestParam(defaultValue = "1") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
-        PageResponse<UserAdminResponse> response = authService.getUsersForAdmin(status, pageNo, pageSize, sortBy, sortDir);
+        PageResponse<UserAdminResponse> response = authService.getUsersForAdmin(status, searchTerm, pageNo, pageSize, sortBy, sortDir);
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách người dùng thành công", response));
     }
 }

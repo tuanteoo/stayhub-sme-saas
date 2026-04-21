@@ -63,7 +63,7 @@ public class PropertyController {
             @RequestParam(required = false) String status,
             @Parameter(
                     name = "searchTerm",
-                    description = "Tìm kiếm theo tên hoặc địa chỉ (VD: HaNoi, hanoi, han,...)"
+                    description = "Tìm kiếm theo tên hoặc địa chỉ (VD: inter, Hà Nội, han,...)"
             )
             @RequestParam(required = false) String searchTerm,
             @RequestParam(defaultValue = "1") int page,

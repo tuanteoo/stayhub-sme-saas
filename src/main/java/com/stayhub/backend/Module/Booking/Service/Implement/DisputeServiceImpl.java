@@ -12,6 +12,7 @@ import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Model.Dispute;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Booking.Repository.DisputeRepository;
+import com.stayhub.backend.Module.Booking.Repository.DisputeSpecification;
 import com.stayhub.backend.Module.Booking.Service.DisputeService;
 import com.stayhub.backend.Module.Identity.Model.Role;
 import com.stayhub.backend.Module.Identity.Model.User;
@@ -20,9 +21,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -89,21 +92,19 @@ public class DisputeServiceImpl implements DisputeService {
     public PageResponse<DisputeAdminResponse> getDisputesForAdmin(String status, int pageNo, int pageSize, String sortBy, String sortDir) {
         Pageable pageable = PaginationUtil.getPageable(pageNo, pageSize, sortBy, sortDir, "createdAt");
 
-        DisputeStatus disputeStatus = null;
+        List<Specification<Dispute>> specs = new ArrayList<>();
+
         if (status != null && !status.trim().isEmpty()) {
             try {
-                disputeStatus = DisputeStatus.valueOf(status.toUpperCase());
+                DisputeStatus disputeStatus = DisputeStatus.valueOf(status.toUpperCase());
+                specs.add(DisputeSpecification.hasStatus(disputeStatus));
             } catch (IllegalArgumentException e) {
                 throw new InvalidDataException("Trạng thái khiếu nại không hợp lệ.");
             }
         }
 
-        Page<Dispute> disputePage;
-        if (disputeStatus == null) {
-            disputePage = disputeRepository.findAllWithGraph(pageable);
-        } else {
-            disputePage = disputeRepository.findByStatusWithGraph(disputeStatus, pageable);
-        }
+        Specification<Dispute> finalSpec = Specification.allOf(specs);
+        Page<Dispute> disputePage = disputeRepository.findAll(finalSpec, pageable);
 
         List<DisputeAdminResponse> responses = disputePage.getContent().stream()
                 .map(d -> {

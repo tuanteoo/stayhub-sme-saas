@@ -63,11 +63,12 @@ public class PropertyServiceImpl implements PropertyService {
                 hostDetail.getOnboardingStatus() != HostOnboardingStatus.PENDING_REVIEW) {
             throw new AppException(ErrorCode.HOST_NOT_APPROVED);
         }
+
         if (!isFirstPropertyOnboarding){
             UserSubscription userSubscription = userSubscriptionRepository.findFirstByUser_IdAndStatusOrderByStartDateDesc(currentUser.getId(), UserSubscriptionStatus.ACTIVE)
                     .orElseThrow(() -> new InvalidDataException("Bạn chưa có gói đăng ký hoạt động. Vui lòng đăng ký gói cước để tạo chỗ ở."));
 
-            long currentPropertyCount = propertyRepository.countByHostId(currentUser.getId());
+            long currentPropertyCount = propertyRepository.countByHostIdAndStatusNotIn(currentUser.getId(), List.of(PropertyStatus.REJECTED,PropertyStatus.BANNED));
 
             Integer maxListings = userSubscription.getCurrentMaxListings();
             if (maxListings != null && currentPropertyCount >= maxListings) {
@@ -502,7 +503,6 @@ public class PropertyServiceImpl implements PropertyService {
             }
         }
 
-
         Page<Property> propertyPage;
         if (propertyStatus == null) {
             propertyPage = propertyRepository.findAllByOnboardingStatus(
@@ -553,6 +553,49 @@ public class PropertyServiceImpl implements PropertyService {
                 .totalPage(propertyPage.getTotalPages())
                 .totalElements(propertyPage.getTotalElements())
                 .items(responses)
+                .build();
+    }
+
+    @Override
+    public HostPropertyStatsResponse getHostPropertyStats(Long hostId) {
+        long draft = 0, pending = 0, active = 0, inactive = 0, rejected = 0, hidden = 0, banned = 0;
+        long total = 0;
+
+        List<Object[]> statusCounts = propertyRepository.countPropertiesGroupedByStatus(hostId);
+
+        for (Object[] row : statusCounts) {
+            PropertyStatus status = (PropertyStatus) row[0];
+            long count = (Long) row[1];
+            total += count;
+
+            switch (status) {
+                case DRAFT -> draft = count;
+                case PENDING_REVIEW -> pending = count;
+                case ACTIVE -> active = count;
+                case INACTIVE -> inactive = count;
+                case REJECTED -> rejected = count;
+                case HIDDEN -> hidden = count;
+                case BANNED -> banned = count;
+            }
+        }
+
+        UserSubscription currentSub = userSubscriptionRepository.findFirstByUser_IdAndStatusOrderByStartDateDesc(hostId, UserSubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói cước của bạn đang hoạt động!"));
+
+        long currentCountedListings = draft + pending + active + inactive + hidden;
+        boolean canCreate = currentSub.getCurrentMaxListings() == null || currentCountedListings < currentSub.getCurrentMaxListings();
+
+        return HostPropertyStatsResponse.builder()
+                .totalProperties(total)
+                .draftCount(draft)
+                .pendingReviewCount(pending)
+                .activeCount(active)
+                .inactiveCount(inactive)
+                .rejectedCount(rejected)
+                .hiddenCount(hidden)
+                .bannedCount(banned)
+                .maxListingsAllowed(currentSub.getCurrentMaxListings())
+                .canCreateNewProperty(canCreate)
                 .build();
     }
 

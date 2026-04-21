@@ -205,4 +205,16 @@ public class PropertyController {
         List<SubscriptionPlanResponse> response = subscriptionService.getAllSubscriptionPlans();
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách gói cước thành công", response));
     }
+
+    @Operation(summary = "HOST - Thống kê tổng quan và kiểm tra hạn mức bài đăng")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @GetMapping("/hosts/stats")
+    public ResponseEntity<ResponseData<HostPropertyStatsResponse>> getMyDashboardStats(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Long hostId = userDetails.getUser().getHostDetail().getId();
+        HostPropertyStatsResponse response = propertyService.getHostPropertyStats(hostId);
+
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy thống kê thành công", response));
+    }
 }

@@ -19,4 +19,5 @@ public interface PropertyService {
     List<PropertyCardResponse> getTopPropertiesByCategorySlug(String categorySlug);
     PropertyDetailResponse convertToDetailResponse(Property property, LocalDate checkInDate, LocalDate checkOutDate);
     PageResponse<AdminPropertyResponse> getPropertiesForAdmin(String status, int page, int size, String sortBy, String sortDir);
+    HostPropertyStatsResponse getHostPropertyStats(Long hostId);
 }

@@ -12,10 +12,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpecificationExecutor<Property> {
-    long countByHostId(Long hostId);
+    long countByHostIdAndStatusNotIn(Long hostId, Collection<PropertyStatus> statuses);
     Page<Property> findByHostId(Long hostId, Pageable pageable);
     Page<Property> findByCategory_SlugAndStatus(String categorySlug, PropertyStatus status, Pageable pageable);
     Optional<Property> findBySlugAndStatus(String slug, PropertyStatus status);
@@ -66,4 +68,7 @@ public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpe
             @Param("onboardingStatus") HostOnboardingStatus onboardingStatus,
             @Param("status") PropertyStatus status,
             Pageable pageable);
+
+    @Query("SELECT p.status, COUNT(p) FROM Property p WHERE p.host.id = :hostId GROUP BY p.status")
+    List<Object[]> countPropertiesGroupedByStatus(@Param("hostId") Long hostId);
 }

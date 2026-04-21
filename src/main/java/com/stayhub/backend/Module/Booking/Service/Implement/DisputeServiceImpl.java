@@ -124,6 +124,7 @@ public class DisputeServiceImpl implements DisputeService {
                             .creatorEmail(d.getCreator().getEmail())
                             .creatorRole(currentDisputeRole)
                             .reason(d.getReason())
+                            .evidenceImageUrls(d.getEvidenceImageUrls())
                             .status(d.getStatus().name())
                             .createdAt(d.getCreatedAt())
                             .build();

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PropertySpecification {
+
     public static Specification<Property> buildSearchFilter(
             String destination,
             Integer guestCount,
@@ -27,7 +28,7 @@ public class PropertySpecification {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            predicates.add(criteriaBuilder.equal(root.get("status"), PropertyStatus.PUBLISHED));
+            predicates.add(criteriaBuilder.equal(root.get("status"), PropertyStatus.ACTIVE));
 
             if (destination != null && !destination.trim().isEmpty()) {
                 String normalizedKeyword = StringUtil.normalizeForSearch(destination);
@@ -69,6 +70,29 @@ public class PropertySpecification {
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    public static Specification<Property> hasHostId(Long hostId) {
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("host").get("id"), hostId);
+    }
+
+    public static Specification<Property> hasStatus(PropertyStatus status) {
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("status"), status);
+    }
+
+    public static Specification<Property> searchByKeyword(String keyword) {
+        return (root, query, criteriaBuilder) -> {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return criteriaBuilder.conjunction();
+            }
+
+            String normalizedKeyword = StringUtil.normalizeForSearch(keyword);
+            String likePattern = "%" + normalizedKeyword + "%";
+
+            return criteriaBuilder.like(root.get("searchText"), likePattern);
         };
     }
 }

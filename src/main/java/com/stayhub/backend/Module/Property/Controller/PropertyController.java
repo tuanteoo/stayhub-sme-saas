@@ -56,13 +56,23 @@ public class PropertyController {
     @GetMapping("/host")
     public ResponseEntity<ResponseData<PageResponse<HostPropertyResponse>>> getPropertiesByHost(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Parameter(
+                    name = "status",
+                    description = "lọc theo trạng thái (DRAFT, PENDING_REVIEW, ACTIVE, INACTIVE, HIDDEN, BANNED, REJECTED)"
+            )
+            @RequestParam(required = false) String status,
+            @Parameter(
+                    name = "searchTerm",
+                    description = "Tìm kiếm theo tên hoặc địa chỉ (VD: HaNoi, hanoi, han,...)"
+            )
+            @RequestParam(required = false) String searchTerm,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         PageResponse<HostPropertyResponse> response = propertyService.getPropertiesByHost(
-                customUserDetails.getUser().getId(), page, size, sortBy, sortDir);
+                customUserDetails.getUser().getId(), status,searchTerm, page, size, sortBy, sortDir);
 
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách bài đăng của Host thành công", response));
     }

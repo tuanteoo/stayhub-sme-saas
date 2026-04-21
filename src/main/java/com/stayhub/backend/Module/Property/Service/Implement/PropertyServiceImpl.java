@@ -250,14 +250,30 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PageResponse<HostPropertyResponse> getPropertiesByHost(Long id, int page, int size, String sortBy, String sortDir) {
+    public PageResponse<HostPropertyResponse> getPropertiesByHost(Long id, String status, String searchTerm, int page, int size, String sortBy, String sortDir) {
         User host = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
-        Page<Property> propertyPage = propertyRepository.findByHostId(host.getId(), pageable);
+
+        Specification<Property> spec = PropertySpecification.hasHostId(host.getId());
+
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                PropertyStatus propertyStatus = PropertyStatus.valueOf(status.toUpperCase());
+                spec = spec.and(PropertySpecification.hasStatus(propertyStatus));
+            } catch (IllegalArgumentException e) {
+                throw new InvalidDataException("Trạng thái lọc '" + status + "' không hợp lệ.");
+            }
+        }
+
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            spec = spec.and(PropertySpecification.searchByKeyword(searchTerm));
+        }
+
+        Page<Property> propertyPage = propertyRepository.findAll(spec, pageable);
+
         List<HostPropertyResponse> responses = propertyPage.stream().map(property -> {
-            // Lấy ảnh Thumbnail
             String thumbnailUrl = property.getImages().stream()
                     .filter(PropertyImage::getIsThumbnail)
                     .map(PropertyImage::getUrl)
@@ -284,6 +300,7 @@ public class PropertyServiceImpl implements PropertyService {
                     property.getCreatedAt()
             );
         }).toList();
+
         return PageResponse.<HostPropertyResponse>builder()
                 .pageNo(propertyPage.getNumber() + 1)
                 .pageSize(propertyPage.getSize())
@@ -334,7 +351,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public PropertyDetailResponse getPropertyBySlug(String slug, LocalDate checkInDate, LocalDate checkOutDate) {
-        Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
+        Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở này hoặc bài đăng chưa được duyệt!"));
 
         return convertToDetailResponse(property, checkInDate, checkOutDate);
@@ -436,7 +453,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .province(property.getProvince())
                 .latitude(property.getLatitude())
                 .longitude(property.getLongitude())
-
+                
                 .maxGuests(totalGuests)
                 .numBedrooms(totalRooms)
                 .numBeds(totalBeds)
@@ -541,7 +558,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public List<RoomPriceResponse> calculatePriceForProperty(String slug, LocalDate checkInDate, LocalDate checkOutDate, List<Long> roomIds) {
-        Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.PUBLISHED)
+        Property property = propertyRepository.findBySlugAndStatus(slug, PropertyStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chỗ ở"));
 
         int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
@@ -589,7 +606,7 @@ public class PropertyServiceImpl implements PropertyService {
 
         if (firstPendingProperty.isPresent()) {
             Property property = firstPendingProperty.get();
-            property.setStatus(PropertyStatus.PUBLISHED);
+            property.setStatus(PropertyStatus.ACTIVE);
             propertyRepository.save(property);
         }
     }
@@ -615,7 +632,7 @@ public class PropertyServiceImpl implements PropertyService {
         );
 
         Page<Property> propertyPage = propertyRepository.findByCategory_SlugAndStatus(
-                categorySlug, PropertyStatus.PUBLISHED, top8Pageable
+                categorySlug, PropertyStatus.ACTIVE, top8Pageable
         );
 
         // 3. Map sang Response

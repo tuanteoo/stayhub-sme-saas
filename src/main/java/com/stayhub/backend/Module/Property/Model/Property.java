@@ -75,8 +75,7 @@ public class Property {
     private Integer depositPercentage = 0;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false, length = 50)
     @Builder.Default
     private PropertyStatus status = PropertyStatus.DRAFT;
 

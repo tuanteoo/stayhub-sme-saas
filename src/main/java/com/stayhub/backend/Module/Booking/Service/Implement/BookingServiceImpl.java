@@ -75,8 +75,8 @@ public class BookingServiceImpl implements BookingService {
             throw new InvalidDataException("Hành vi không hợp lệ: Bạn không thể tự đặt chỗ ở của chính mình!");
         }
 
-        if (!PropertyStatus.PUBLISHED.equals(property.getStatus())){
-            throw new InvalidDataException("Bài đăng này chưa được duyệt hoặc đã bị gỡ xuống. Vui lòng chọn chỗ ở khác!");
+        if (!PropertyStatus.ACTIVE.equals(property.getStatus())){
+            throw new InvalidDataException("Bài đăng này chưa được duyệt hoặc không hoạt động. Vui lòng chọn chỗ ở khác!");
         }
 
         long totalNights = ChronoUnit.DAYS.between(request.checkInDate(), request.checkOutDate());

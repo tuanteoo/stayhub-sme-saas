@@ -19,5 +19,5 @@ public interface AuthService {
     void updateUserProfile(Long userId, UpdateUserProfileRequest request);
     void updateHostProfile(Long userId, UpdateHostProfileRequest request);
     void changePassword(Long userId, ChangePasswordRequest request);
-    PageResponse<UserAdminResponse> getUsersForAdmin(String status, int pageNo, int pageSize, String sortBy, String sortDir);
+    PageResponse<UserAdminResponse> getUsersForAdmin(String status, String searchTerm, int pageNo, int pageSize, String sortBy, String sortDir);
 }

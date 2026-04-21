@@ -17,11 +17,13 @@ import com.stayhub.backend.Module.Identity.Security.CustomUserDetailsService;
 import com.stayhub.backend.Module.Identity.Security.JwtTokenProvider;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Common.Service.EmailService;
+import com.stayhub.backend.Module.Property.Repository.PropertySpecification;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -36,10 +38,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -425,19 +424,29 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public PageResponse<UserAdminResponse> getUsersForAdmin(String status, int pageNo, int pageSize, String sortBy, String sortDir) {
+    public PageResponse<UserAdminResponse> getUsersForAdmin(String status, String searchTerm, int pageNo, int pageSize, String sortBy, String sortDir) {
         Pageable pageable = PaginationUtil.getPageable(pageNo, pageSize, sortBy, sortDir, "createdAt");
 
-        UserStatus userStatus = null;
+        List<Specification<User>> specs = new ArrayList<>();
+
+        specs.add(UserSpecification.isNotAdmin());
+
         if (status != null && !status.trim().isEmpty()) {
             try {
-                userStatus = UserStatus.valueOf(status.toUpperCase());
+                UserStatus userStatus = UserStatus.valueOf(status.toUpperCase());
+                specs.add(UserSpecification.hasStatus(userStatus));
             } catch (IllegalArgumentException e) {
                 throw new InvalidDataException("Trạng thái người dùng không hợp lệ.");
             }
         }
 
-        Page<User> userPage = userRepository.findAllUsersForAdmin(userStatus, pageable);
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            specs.add(UserSpecification.searchByKeyword(searchTerm));
+        }
+
+        Specification<User> finalSpec = Specification.allOf(specs);
+
+        Page<User> userPage = userRepository.findAll(finalSpec, pageable);
 
         List<UserAdminResponse> responses = userPage.getContent().stream()
                 .map(user -> {

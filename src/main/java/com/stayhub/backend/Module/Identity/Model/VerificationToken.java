@@ -29,12 +29,15 @@ public class VerificationToken {
     private String token;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false)
+    @Column(name = "type", nullable = false)
     private VerificationType type;
 
     @Column(name = "expiry_date", nullable = false)
     private LocalDateTime expiryDate;
+
+    @Column(name = "attempt_count", nullable = false)
+    @Builder.Default
+    private int attemptCount = 0;
 
     @Column(name = "confirmed_at")
     private LocalDateTime confirmedAt;

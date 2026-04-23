@@ -103,6 +103,10 @@ public class AuthController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/admin/host-applications")
     public ResponseEntity<ResponseData<PageResponse<HostApplicationResponse>>> getApplications(
+            @Parameter(
+                    name = "status",
+                    description = "Trạng thái hồ sơ để lọc (DRAFT, PENDING_REVIEW, APPROVED, REJECTED, REQUEST_CHANGES). Null trả về tất cả hồ sơ"
+            )
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
@@ -119,8 +123,7 @@ public class AuthController {
     public ResponseEntity<ResponseData<HostApplicationDetailResponse>> getApplicationDetail(
 
             @Parameter(
-                  name = "hostCode",
-                    description = "Mã hồ sơ chủ nhà"
+                  name = "hostCode", description = "Mã hồ sơ chủ nhà - xem ở bảng host_details"
             )
             @PathVariable String hostCode) {
 
@@ -143,6 +146,10 @@ public class AuthController {
             Chi tiết phản hồi: Trả về chuỗi thông báo trạng thái phê duyệt tương ứng với kết quả quyết định.
             """)
     public ResponseEntity<ResponseData<String>> reviewApplication(
+            @Parameter(
+                    name = "hostCode",
+                    description = "Mã hồ sơ chủ nhà - xem ở bảng host_details"
+            )
             @RequestParam String hostCode,
             @Valid @RequestBody HostApprovalRequest request) {
         hostOnboardingService.reviewHostApplication(hostCode, request);

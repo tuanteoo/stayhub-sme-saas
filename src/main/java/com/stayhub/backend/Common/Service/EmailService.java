@@ -7,4 +7,5 @@ public interface EmailService {
     void sendBookingReceiptEmail(String toEmail, String guestName, Booking booking);
     void sendHostApprovalEmail(String toEmail, String hostName);
     void sendPasswordResetEmail(String toEmail, String guestName, String token);
+    void sendPayoutOtpEmail(String toEmail, String hostName, String otp);
 }

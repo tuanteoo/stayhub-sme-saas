@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayHub - Mã OTP Rút Tiền</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .header {
+            background-color: #FF5A5F;
+            color: #ffffff;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+        .body-content {
+            padding: 40px 30px;
+            color: #333333;
+            font-size: 15px;
+        }
+        .otp-box {
+            background-color: #f9f9f9;
+            border: 2px dashed #FF5A5F;
+            color: #FF5A5F;
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 10px;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        .warning-text {
+            font-size: 14px;
+            color: #666666;
+            background-color: #fff8f8;
+            border-left: 4px solid #FF5A5F;
+            padding: 12px 15px;
+            margin-top: 30px;
+        }
+        .warning-text ul {
+            margin-top: 8px;
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: #aaaaaa;
+            border-top: 1px solid #eeeeee;
+        }
+    </style>
+</head>
+<body>
+
+<div class="email-container">
+    <div class="header">
+        <h1>StayHub</h1>
+    </div>
+
+    <div class="body-content">
+        <p>Xin chào <strong><span th:text="${hostName}">Host</span></strong>,</p>
+        <p>Chúng tôi nhận được yêu cầu thực hiện lệnh rút tiền từ Ví Khả dụng của bạn. Để bảo vệ an toàn tài sản, vui lòng sử dụng mã xác thực (OTP) dưới đây để hoàn tất giao dịch:</p>
+
+        <div class="otp-box" th:text="${otp}">
+        </div>
+
+        <div class="warning-text">
+            <strong>Lưu ý bảo mật:</strong>
+            <ul>
+                <li>Mã xác thực này chỉ có hiệu lực trong vòng <strong>3 phút</strong>.</li>
+                <li>Tuyệt đối <strong>KHÔNG</strong> chia sẻ mã OTP này cho bất kỳ ai, kể cả nhân viên chăm sóc khách hàng của StayHub.</li>
+            </ul>
+        </div>
+
+        <p style="margin-top: 30px;">Nếu bạn không thực hiện yêu cầu rút tiền này, có thể tài khoản của bạn đang bị xâm nhập. Vui lòng đăng nhập vào website và đổi mật khẩu ngay lập tức.</p>
+    </div>
+
+    <div class="footer">
+        <p>Đây là email thông báo tự động, vui lòng không phản hồi.</p>
+        <p>© 2024 StayHub. Trân trọng,</p>
+    </div>
+</div>
+
+</body>
+</html>

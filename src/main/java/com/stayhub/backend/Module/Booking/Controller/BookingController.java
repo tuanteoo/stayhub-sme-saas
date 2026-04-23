@@ -82,6 +82,7 @@ public class BookingController {
     @PutMapping("/cancel/{bookingCode}")
     @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<ResponseData<String>> cancelBookingByGuest(
+            @Parameter(name = "bookingCode", description = "Xem ở bảng bookings")
             @PathVariable String bookingCode,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {

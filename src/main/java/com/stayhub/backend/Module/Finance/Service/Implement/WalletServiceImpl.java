@@ -3,11 +3,12 @@ package com.stayhub.backend.Module.Finance.Service.Implement;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
+import com.stayhub.backend.Common.Service.EmailService;
 import com.stayhub.backend.Common.Util.*;
 import com.stayhub.backend.Module.Booking.Model.Booking;
-import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Finance.DTO.Request.PayoutCreateRequest;
 import com.stayhub.backend.Module.Finance.DTO.Request.PayoutProcessRequest;
+import com.stayhub.backend.Module.Finance.DTO.Request.PayoutVerifyRequest;
 import com.stayhub.backend.Module.Finance.DTO.Response.PayoutResponse;
 import com.stayhub.backend.Module.Finance.DTO.Response.TransactionResponse;
 import com.stayhub.backend.Module.Finance.DTO.Response.WalletResponse;
@@ -15,6 +16,8 @@ import com.stayhub.backend.Module.Finance.Model.*;
 import com.stayhub.backend.Module.Finance.Repository.*;
 import com.stayhub.backend.Module.Finance.Service.WalletService;
 import com.stayhub.backend.Module.Identity.Model.User;
+import com.stayhub.backend.Module.Identity.Model.VerificationToken;
+import com.stayhub.backend.Module.Identity.Repository.VerificationTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,6 +40,8 @@ public class WalletServiceImpl implements WalletService {
     private final PaymentRepository paymentRepository;
     private final BankAccountRepository bankAccountRepository;
     private final PayoutRepository payoutRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final EmailService emailService;
 
     @Override
     public void processBookingPaymentSuccess(Booking booking, BigDecimal amountPaid) {
@@ -203,25 +208,48 @@ public class WalletServiceImpl implements WalletService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void createPayoutRequest(Long hostId, PayoutCreateRequest request) {
-        if (request.amountPayout().compareTo(BigDecimal.valueOf(5000)) < 0) {
-            throw new InvalidDataException("Số tiền rút tối thiểu là 5,000 VNĐ.");
-        }
+    public void requestPayoutOTP(Long hostId, PayoutCreateRequest request) {
+        var validationResult = validateAndGetPayoutEntities(hostId, request.amountPayout(), request.bankAccountId());
+        User user = validationResult.wallet().getUser();
 
-        Wallet wallet = walletRepository.findByUser_Id(hostId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ví của Chủ nhà"));
+        String otpCode = String.format("%06d", new java.util.Random().nextInt(999999));
+        verificationTokenRepository.deleteByUserAndType(user, VerificationType.PAYOUT_VERIFICATION);
 
+        verificationTokenRepository.save(VerificationToken.builder()
+                .user(user)
+                .token(otpCode)
+                .type(VerificationType.PAYOUT_VERIFICATION)
+                .expiryDate(LocalDateTime.now().plusMinutes(3))
+                .build());
+
+        emailService.sendPayoutOtpEmail(user.getEmail(), user.getProfile().getFullName(), otpCode);
+        log.info("Đã gửi mã OTP rút tiền đến email {} của Host {}. Mã OTP: {}", user.getEmail(), hostId, otpCode);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void verifyAndCreatePayout(Long hostId, PayoutVerifyRequest request) {
+        var validationResult = validateAndGetPayoutEntities(hostId, request.amountPayout(), request.bankAccountId());
+        Wallet wallet = validationResult.wallet();
+        BankAccount bankAccount = validationResult.bankAccount();
         User host = wallet.getUser();
 
-        BankAccount bankAccount = bankAccountRepository.findByIdAndUser_Id(request.bankAccountId(), hostId)
-                .orElseThrow(() -> new InvalidDataException("Tài khoản ngân hàng không hợp lệ hoặc không thuộc sở hữu của bạn."));
+        VerificationToken token = verificationTokenRepository.findByUserAndType(host, VerificationType.PAYOUT_VERIFICATION)
+                .orElseThrow(() -> new InvalidDataException("Mã OTP không tồn tại"));
 
-        if (wallet.getDebtBalance().compareTo(BigDecimal.ZERO) > 0) {
-            throw new InvalidDataException("Bạn đang có dư nợ " + wallet.getDebtBalance() + " VNĐ. Vui lòng thanh toán nợ trước khi rút tiền.");
+        if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
+            verificationTokenRepository.delete(token);
+            throw new InvalidDataException("OTP hết hạn.");
         }
 
-        if (wallet.getAvailableBalance().compareTo(request.amountPayout()) < 0) {
-            throw new InvalidDataException("Số dư khả dụng không đủ để thực hiện lệnh rút này.");
+        if (!token.getToken().equals(request.otp())) {
+            token.setAttemptCount(token.getAttemptCount() + 1);
+            if (token.getAttemptCount() >= 5) {
+                verificationTokenRepository.delete(token);
+                throw new InvalidDataException("Sai OTP quá 5 lần. Giao dịch bị hủy.");
+            }
+            verificationTokenRepository.save(token);
+            throw new InvalidDataException("Mã OTP sai. Còn " + (5 - token.getAttemptCount()) + " lần thử.");
         }
 
         wallet.setAvailableBalance(wallet.getAvailableBalance().subtract(request.amountPayout()));
@@ -249,7 +277,8 @@ public class WalletServiceImpl implements WalletService {
                 .build();
         transactionRepository.save(trans);
 
-        log.info("Host {} vừa tạo lệnh rút {} VNĐ", hostId, request.amountPayout());
+        verificationTokenRepository.delete(token);
+        log.info("Host {} đã xác thực OTP thành công và tạo lệnh rút tiền ID {}.", hostId, payout.getId());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -342,5 +371,27 @@ public class WalletServiceImpl implements WalletService {
                 .totalElements(payoutPage.getTotalElements())
                 .items(responses)
                 .build();
+    }
+
+    private PayoutValidationResult validateAndGetPayoutEntities(Long hostId, BigDecimal amount, Integer bankAccountId) {
+        if (amount.compareTo(BigDecimal.valueOf(5000)) < 0) {
+            throw new InvalidDataException("Số tiền rút tối thiểu là 5,000 VNĐ.");
+        }
+
+        Wallet wallet = walletRepository.findByUser_Id(hostId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ví của Chủ nhà"));
+
+        if (wallet.getDebtBalance().compareTo(BigDecimal.ZERO) > 0) {
+            throw new InvalidDataException("Bạn đang có dư nợ " + wallet.getDebtBalance() + " VNĐ. Vui lòng thanh toán nợ trước khi rút tiền.");
+        }
+
+        if (wallet.getAvailableBalance().compareTo(amount) < 0) {
+            throw new InvalidDataException("Số dư khả dụng không đủ để thực hiện lệnh rút này.");
+        }
+
+        BankAccount bankAccount = bankAccountRepository.findByIdAndUser_Id(bankAccountId, hostId)
+                .orElseThrow(() -> new InvalidDataException("Tài khoản ngân hàng không hợp lệ hoặc không thuộc sở hữu của bạn."));
+
+        return new PayoutValidationResult(wallet, bankAccount);
     }
 }

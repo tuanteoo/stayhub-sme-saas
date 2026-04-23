@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
@@ -96,7 +97,6 @@ public class EmailServiceImpl implements EmailService {
                 paymentStatusStr = "Đã thanh toán cọc";
             }
 
-            // 3. Thay thế các biến trong HTML bằng data thật
             htmlContent = htmlContent.replace("{{guestName}}", guestName)
                     .replace("{{bookingCode}}", booking.getBookingCode())
                     .replace("{{propertyName}}", booking.getProperty().getName())
@@ -134,6 +134,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
+            helper.setFrom(fromEmail, "StayHub Support");
             helper.setTo(toEmail);
             helper.setSubject("🎉 Chúc mừng! Đơn đăng ký Chủ nhà StayHub của bạn đã được phê duyệt");
             helper.setText(htmlContent, true);
@@ -141,6 +142,8 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
         } catch (MessagingException e) {
             throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -169,6 +172,30 @@ public class EmailServiceImpl implements EmailService {
 
         } catch (Exception e) {
             log.error("Lỗi khi gửi email đặt lại mật khẩu đến {}: {}", toEmail, e.getMessage());
+        }
+    }
+
+    @Async("emailTaskExecutor")
+    @Override
+    public void sendPayoutOtpEmail(String toEmail, String hostName, String otp) {
+        try {
+            Context context = new Context();
+            context.setVariable("hostName", hostName);
+            context.setVariable("otp", otp);
+
+            String htmlContent = templateEngine.process("email/payout-otp", context);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail, "StayHub Support");
+            helper.setTo(toEmail);
+            helper.setSubject("🔒 StayHub: Mã OTP xác nhận rút tiền");
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            log.error("Lỗi gửi mail OTP: {}", e.getMessage());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
         }
     }
 }

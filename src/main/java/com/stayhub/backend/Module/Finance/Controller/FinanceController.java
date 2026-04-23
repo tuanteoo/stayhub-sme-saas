@@ -4,6 +4,7 @@ import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Finance.DTO.Request.BankAccountRequest;
 import com.stayhub.backend.Module.Finance.DTO.Request.PayoutProcessRequest;
+import com.stayhub.backend.Module.Finance.DTO.Request.PayoutVerifyRequest;
 import com.stayhub.backend.Module.Finance.DTO.Response.BankAccountResponse;
 import com.stayhub.backend.Module.Finance.DTO.Request.PayoutCreateRequest;
 import com.stayhub.backend.Module.Finance.DTO.Response.PayoutResponse;
@@ -137,22 +138,38 @@ public class FinanceController {
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Xóa tài khoản ngân hàng thành công"));
     }
 
-    @Operation(summary = "HOST - Yêu cầu rút tiền")
+    @Operation(summary = "HOST - Valid yêu cầu rút tiền và tạo OTP")
     @PreAuthorize("hasAuthority('ROLE_HOST')")
-    @PostMapping("host/payouts")
-    public ResponseEntity<ResponseData<String>> requestPayout(
+    @PostMapping("host/payouts/request-otp")
+    public ResponseEntity<ResponseData<String>> requestPayoutOtp(
             @Valid @RequestBody PayoutCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        walletService.createPayoutRequest(userDetails.getUser().getId(), request);
+        walletService.requestPayoutOTP(userDetails.getUser().getId(), request);
 
-        return ResponseEntity.ok(new ResponseData<>(HttpStatus.CREATED.value(), "Tạo lệnh rút tiền thành công. Vui lòng chờ Admin phê duyệt."));
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Vui lòng kiểm tra email để lấy mã OTP xác nhận rút tiền"));
+    }
+
+    @Operation(summary = "HOST - Xác thực OTP và lưu yêu cầu rút tiền")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @PostMapping("host/payouts/verify")
+    public ResponseEntity<ResponseData<String>> verifyPayout(
+            @Valid @RequestBody PayoutVerifyRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        walletService.verifyAndCreatePayout(userDetails.getUser().getId(), request);
+
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Xác thực OTP thành công. Yêu cầu rút tiền của bạn đã được gửi đến admin để thẩm định"));
     }
 
     @Operation(summary = "ADMIN - Lấy danh sách yêu cầu rút tiền")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("admin/payouts")
     public ResponseEntity<ResponseData<PageResponse<PayoutResponse>>> getAllPayouts(
+            @Parameter(
+                    name = "status",
+                    description = "Lọc theo status Payout (REQUESTED, PROCESSING, COMPLETED, REJECTED)"
+            )
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,

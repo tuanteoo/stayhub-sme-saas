@@ -3,6 +3,7 @@ package com.stayhub.backend.Module.Property.Controller;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
+import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.Service.CancellationPolicyService;
@@ -35,11 +36,7 @@ public class PropertyController {
     private final CancellationPolicyService cancellationPolicyService;
 
     @PreAuthorize("hasAuthority('ROLE_HOST')")
-    @Operation(summary = "HOST - Tạo bài đăng",
-    description = """
-            Phương thức: POST
-            Đối tượng yêu cầu: PropertyCreateRequest
-            """)
+    @Operation(summary = "HOST - Tạo bài đăng")
     @PostMapping
     public ResponseData<String> createProperty(@AuthenticationPrincipal CustomUserDetails customUserDetails, @Valid @RequestBody PropertyCreateRequest request) {
 
@@ -80,6 +77,10 @@ public class PropertyController {
     @Operation(summary = "GUEST - Lấy 8 bài đăng nổi bật theo category slug")
     @GetMapping("/category/{slug}/top")
     public ResponseEntity<ResponseData<List<PropertyCardResponse>>> getTopPropertiesByCategorySlug(
+            @Parameter(
+                    name = "categorySlug",
+                    description = "Slug của danh mục - xem ở bảng categories"
+            )
             @PathVariable("slug") String categorySlug) {
 
         List<PropertyCardResponse> response = propertyService.getTopPropertiesByCategorySlug(categorySlug);
@@ -93,10 +94,31 @@ public class PropertyController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
+            @Parameter(
+                    name = "destination",
+                    description = "Điểm đến, VD: HaNoi, han,.."
+            )
             @RequestParam(required = false) String destination,
+            @Parameter(
+                    name = "guestCount",
+                    description = "Số lượng khách để lọc bài đăng phù hợp"
+            )
             @RequestParam(required = false) Integer guestCount,
+
+            @Parameter(
+                    name = "checkInDate",
+                    description = "Ngày nhận phòng, định dạng yyyy-MM-dd"
+            )
             @RequestParam(required = false) LocalDate checkInDate,
+            @Parameter(
+                    name = "checkOutDate",
+                    description = "Ngày trả phòng, định dạng yyyy-MM-dd"
+            )
             @RequestParam(required = false) LocalDate checkOutDate,
+            @Parameter(
+                    name = "categorySlug",
+                    description = "Slug của danh mục - xem ở bảng categories"
+            )
             @RequestParam(required = false) String categorySlug) {
 
         PageResponse<PropertyCardResponse> properties = propertyService.getPropertiesForGuest(page, size, sortBy, sortDir,destination,guestCount,checkInDate,checkOutDate, categorySlug);
@@ -125,8 +147,20 @@ public class PropertyController {
     @Operation(summary = "GUEST_USER - Xem chi tiết bài đăng dựa trên slug")
     @GetMapping("/{slug}")
     public ResponseEntity<ResponseData<PropertyDetailResponse>> getPropertyDetail(
+            @Parameter(
+                    name = "slug",
+                    description = "Slug của bài đăng - xem ở bảng properties"
+            )
             @PathVariable String slug,
+            @Parameter(
+                    name = "checkInDate",
+                    description = "Ngày nhận phòng, định dạng yyyy-MM-dd"
+            )
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkInDate,
+            @Parameter(
+                    name = "checkOutDate",
+                    description = "Ngày trả phòng, định dạng yyyy-MM-dd"
+            )
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate) {
 
         PropertyDetailResponse propertyDetail = propertyService.getPropertyBySlug(slug, checkInDate, checkOutDate);
@@ -137,8 +171,20 @@ public class PropertyController {
     @Operation(summary = "GUEST_USER - Tính tiền cho phòng đã chọn dựa trên slug bài đăng, ngày nhận phòng và ngày trả phòng")
     @GetMapping("/{slug}/calculate-price")
     public ResponseEntity<ResponseData<List<RoomPriceResponse>>> calculatePriceBySlug(
+            @Parameter(
+                    name = "slug",
+                    description = "Slug của bài đăng - xem ở bảng properties"
+            )
             @PathVariable String slug,
+            @Parameter(
+                    name = "checkInDate",
+                    description = "Ngày nhận phòng, định dạng yyyy-MM-dd"
+            )
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkInDate,
+            @Parameter(
+                    name = "checkOutDate",
+                    description = "Ngày trả phòng, định dạng yyyy-MM-dd"
+            )
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate,
             @RequestParam(required = false) List<Long> roomIds) {
 
@@ -190,8 +236,12 @@ public class PropertyController {
     @Operation(summary = "ADMIN - Thẩm định bài đăng của host")
     @PutMapping("/admin/{propertyId}/review")
     public ResponseEntity<ResponseData<String>> reviewProperty(
+            @Parameter(
+                    name = "propertyId",
+                    description = "ID của bài đăng cần thẩm định - xem ở bảng properties"
+            )
             @PathVariable Long propertyId,
-            @Valid @RequestBody com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest request) {
+            @Valid @RequestBody PropertyApprovalRequest request) {
 
         propertyService.reviewProperty(propertyId, request);
 
@@ -203,6 +253,7 @@ public class PropertyController {
     @GetMapping("/admin/subscription-plans")
     public ResponseEntity<ResponseData<List<SubscriptionPlanResponse>>> getAllSubscriptionPlans() {
         List<SubscriptionPlanResponse> response = subscriptionService.getAllSubscriptionPlans();
+
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách gói cước thành công", response));
     }
 

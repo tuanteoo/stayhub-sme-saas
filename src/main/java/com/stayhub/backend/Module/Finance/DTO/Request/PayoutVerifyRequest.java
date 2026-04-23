@@ -2,13 +2,12 @@ package com.stayhub.backend.Module.Finance.DTO.Request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Builder;
 
 import java.math.BigDecimal;
 
-@Builder
-public record PayoutCreateRequest(
+public record PayoutVerifyRequest(
         @Schema(description = "Số tiền rút", example = "1000000")
         @NotNull(message = "Số tiền rút không được để trống")
         @DecimalMin(value = "5000.00", message = "Số tiền rút phải lớn hơn hoặc bằng 5000")
@@ -16,6 +15,10 @@ public record PayoutCreateRequest(
 
         @Schema(description = "ID tài khoản ngân hàng", example = "1")
         @NotNull(message = "ID tài khoản ngân hàng không được để trống")
-        Integer bankAccountId
+        Integer bankAccountId,
+
+        @Schema(description = "Mã OTP xác thực", example = "123456")
+        @NotBlank(message = "OTP không được để trống")
+        String otp
 ) {
 }

@@ -78,3 +78,6 @@ Thumbs.db
 
 ### Spring Boot Configuration ###
 application-dev.yaml
+
+Result_Unit_Test/
+src/test/

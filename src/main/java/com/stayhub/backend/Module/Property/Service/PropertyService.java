@@ -20,5 +20,4 @@ public interface PropertyService {
     PropertyDetailResponse convertToDetailResponse(Property property, LocalDate checkInDate, LocalDate checkOutDate);
     PageResponse<AdminPropertyResponse> getPropertiesForAdmin(String status, int page, int size, String sortBy, String sortDir);
     HostPropertyStatsResponse getHostPropertyStats(Long hostId);
-    void togglePropertyStatus(Long hostId, Long propertyId, boolean isActive);
 }

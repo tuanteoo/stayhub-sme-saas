@@ -52,7 +52,6 @@ public class AppConfig {
                                 "/auth/reset-password",
                                 "/public/**",
                                 "/payments/vnpay/ipn",
-                                "/payments/sepay/ipn",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"

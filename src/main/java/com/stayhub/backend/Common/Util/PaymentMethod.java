@@ -5,6 +5,6 @@ public enum PaymentMethod {
     MOMO,
     STRIPE,
     PAYPAL,
-    SEPAY,
+    CASH,
     BANK_TRANSFER
 }

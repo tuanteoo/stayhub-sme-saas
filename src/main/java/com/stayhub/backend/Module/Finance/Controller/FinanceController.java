@@ -2,8 +2,14 @@ package com.stayhub.backend.Module.Finance.Controller;
 
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
-import com.stayhub.backend.Module.Finance.DTO.Request.*;
-import com.stayhub.backend.Module.Finance.DTO.Response.*;
+import com.stayhub.backend.Module.Finance.DTO.Request.BankAccountRequest;
+import com.stayhub.backend.Module.Finance.DTO.Request.PayoutProcessRequest;
+import com.stayhub.backend.Module.Finance.DTO.Request.PayoutVerifyRequest;
+import com.stayhub.backend.Module.Finance.DTO.Response.BankAccountResponse;
+import com.stayhub.backend.Module.Finance.DTO.Request.PayoutCreateRequest;
+import com.stayhub.backend.Module.Finance.DTO.Response.PayoutResponse;
+import com.stayhub.backend.Module.Finance.DTO.Response.TransactionResponse;
+import com.stayhub.backend.Module.Finance.DTO.Response.WalletResponse;
 import com.stayhub.backend.Module.Finance.Service.BankAccountService;
 import com.stayhub.backend.Module.Finance.Service.PaymentService;
 import com.stayhub.backend.Module.Finance.Service.WalletService;
@@ -14,7 +20,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,17 +38,14 @@ public class FinanceController {
     private final WalletService walletService;
     private final BankAccountService bankAccountService;
 
-    @Value("${integration.sepay.secret-key}")
-    private String sePay_SecretKey;
-
     @GetMapping("/vnpay/booking/create-url")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    @Operation(summary = "USER - Tạo URL thanh toán VNPAY/SEPAY cho booking")
-    public ResponseEntity<ResponseData<PaymentUrlResponse>> createVNPayUrl(
+    @Operation(summary = "USER - Tạo URL thanh toán VNPAY cho booking")
+    public ResponseEntity<ResponseData<String>> createVNPayUrl(
             @RequestParam String bookingCode,
             HttpServletRequest request) {
 
-        PaymentUrlResponse paymentUrl = paymentService.getBookingPaymentUrl(bookingCode, request);
+        String paymentUrl = paymentService.createBookingVNPayUrl(bookingCode, request);
 
         return ResponseEntity.ok(
                 new ResponseData<>(200, "Tạo URL thanh toán thành công", paymentUrl)
@@ -70,20 +72,6 @@ public class FinanceController {
     public ResponseEntity<Map<String, String>> processVNPayIPN(HttpServletRequest request) {
         Map<String, String> response = paymentService.processVnPayIpn(request);
         return ResponseEntity.ok(response);
-    }
-
-    @Operation(summary = "(No testing required)SEPAY IPN Webhook")
-    @PostMapping("/sepay/ipn")
-    public ResponseEntity<?> handleSepayIpn(
-            @RequestHeader("X-Secret-Key") String secretKey,
-            @RequestBody SepayIpnRequest request) {
-
-        if (!this.sePay_SecretKey.equals(secretKey)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        paymentService.processSepayIpn(request);
-        return ResponseEntity.ok("Xác nhận thành công");
     }
 
     @Operation(summary = "HOST - Xem thông tin ví")

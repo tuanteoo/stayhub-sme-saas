@@ -24,7 +24,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -598,38 +597,6 @@ public class PropertyServiceImpl implements PropertyService {
                 .maxListingsAllowed(currentSub.getCurrentMaxListings())
                 .canCreateNewProperty(canCreate)
                 .build();
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    @Override
-    public void togglePropertyStatus(Long hostId, Long propertyId, boolean isActive) {
-        Property property = propertyRepository.findById(propertyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài đăng!"));
-
-        if (!property.getHost().getId().equals(hostId)) {
-            throw new AuthorizationDeniedException("Bạn không có quyền thao tác với bài đăng này.");
-        }
-
-        if (isActive) {
-            if (property.getStatus() == PropertyStatus.ACTIVE) {
-                return;
-            }
-            if (property.getStatus() != PropertyStatus.INACTIVE) {
-                throw new InvalidDataException("Chỉ có thể mở lại bài đăng đang tạm ngưng (INACTIVE). Bài đăng đang chờ duyệt hoặc bị khóa không thể tự mở lại.");
-            }
-            property.setStatus(PropertyStatus.ACTIVE);
-
-        } else {
-            if (property.getStatus() == PropertyStatus.INACTIVE) {
-                return;
-            }
-            if (property.getStatus() != PropertyStatus.ACTIVE) {
-                throw new InvalidDataException("Chỉ có thể tạm ngưng (INACTIVE) đối với bài đăng đang hoạt động (ACTIVE).");
-            }
-            property.setStatus(PropertyStatus.INACTIVE);
-        }
-
-        propertyRepository.save(property);
     }
 
     @Override

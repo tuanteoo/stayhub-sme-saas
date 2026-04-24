@@ -268,27 +268,4 @@ public class PropertyController {
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy thống kê thành công", response));
     }
-
-    @PreAuthorize("hasAuthority('ROLE_HOST')")
-    @Operation(summary = "HOST - Bật/tắt trạng thái hoạt động của bài đăng (ACTIVE/INACTIVE)")
-    @PutMapping("/host/{propertyId}/toggle-status")
-    public ResponseEntity<ResponseData<String>> togglePropertyStatus(
-            @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @Parameter(
-                    name = "propertyId",
-                    description = "ID của bài đăng - xem ở bảng properties")
-            @PathVariable Long propertyId,
-            @Parameter(
-                    name = "isActive",
-                    description = "true: Mở hoạt động (ACTIVE), false: Tạm ngưng (INACTIVE)")
-            @RequestParam boolean isActive) {
-
-        propertyService.togglePropertyStatus(customUserDetails.getUser().getId(), propertyId, isActive);
-
-        String message = isActive
-                ? "Đã mở lại hoạt động cho bài đăng thành công."
-                : "Đã tạm ngưng bài đăng thành công.";
-
-        return ResponseEntity.ok(new ResponseData<>(200, message));
-    }
 }

@@ -3,7 +3,10 @@ package com.stayhub.backend.Module.Finance.Service.Implement;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Service.EmailService;
+import com.stayhub.backend.Common.Util.PaymentMethod;
 import com.stayhub.backend.Module.Booking.Service.BookingService;
+import com.stayhub.backend.Module.Finance.DTO.Request.SepayIpnRequest;
+import com.stayhub.backend.Module.Finance.DTO.Response.PaymentUrlResponse;
 import com.stayhub.backend.Module.Finance.Model.Payment;
 import com.stayhub.backend.Module.Finance.Repository.PaymentRepository;
 import com.stayhub.backend.Module.Finance.Service.PaymentService;
@@ -29,6 +32,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -73,6 +77,15 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Value("${vnpay.api-url}")
     private String vnp_ApiUrl;
+
+    @Value("${integration.sepay.merchant-id}")
+    private String sePay_MerchantId;
+
+    @Value("${integration.sepay.prefix}")
+    private String sePay_Prefix;
+
+    @Value("${integration.sepay.checkout-url}")
+    private String sePay_CheckoutUrl;
 
     @Override
     public Map<String, String> processVnPayIpn(HttpServletRequest request) {
@@ -140,7 +153,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public String createBookingVNPayUrl(String bookingCode, HttpServletRequest request) {
+    public PaymentUrlResponse getBookingPaymentUrl(String bookingCode, HttpServletRequest request) {
         Booking booking = bookingRepository.findByBookingCode(bookingCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt phòng"));
 
@@ -152,11 +165,29 @@ public class PaymentServiceImpl implements PaymentService {
                         booking.getId(), PaymentStatus.PENDING)
                 .orElseThrow(() -> new InvalidDataException("Không tìm thấy hồ sơ thanh toán gốc của đơn hàng này."));
 
-        long amount = pendingPayment.getAmount().multiply(BigDecimal.valueOf(100)).longValue();
-        String vnp_TxnRef = pendingPayment.getTransactionRef();
-        String vnp_OrderInfo = "Thanh_toan_don_hang_" + bookingCode;
+        String paymentUrl = "";
+        PaymentMethod method = pendingPayment.getPaymentMethod();
 
-        return buildVNPayUrl(amount, vnp_TxnRef, vnp_OrderInfo, request);
+        if (method == PaymentMethod.VNPAY) {
+            long amount = pendingPayment.getAmount().multiply(BigDecimal.valueOf(100)).longValue();
+            String vnp_TxnRef = pendingPayment.getTransactionRef();
+            String vnp_OrderInfo = "Thanh_toan_don_hang_" + bookingCode;
+            paymentUrl = buildVNPayUrl(amount, vnp_TxnRef, vnp_OrderInfo, request);
+
+        } else if (method == PaymentMethod.SEPAY) {
+            String amountStr = pendingPayment.getAmount().toBigInteger().toString();
+            String description = sePay_Prefix + pendingPayment.getTransactionRef();
+            paymentUrl = String.format("%s?m=%s&iv=%s&am=%s&des=%s",
+                    sePay_CheckoutUrl, sePay_MerchantId, pendingPayment.getTransactionRef(), amountStr, description);
+
+        } else {
+            throw new InvalidDataException("Phương thức thanh toán không được hỗ trợ.");
+        }
+
+        return PaymentUrlResponse.builder()
+                .paymentUrl(paymentUrl)
+                .paymentMethod(method.name())
+                .build();
     }
 
     @Override
@@ -243,6 +274,42 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (Exception e) {
             log.error("Lỗi khi thực hiện hoàn tiền VNPAY: {}", e.getMessage());
             return false;
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void processSepayIpn(SepayIpnRequest request) {
+        if (!"ORDER_PAID".equals(request.notificationType())) {
+            return;
+        }
+
+        String transactionRef = request.order().orderInvoiceNumber();
+        Payment payment = paymentRepository.findByTransactionRef(transactionRef).orElse(null);
+
+        if (payment != null && payment.getPaymentStatus() == PaymentStatus.PENDING) {
+            log.info("Xác nhận thanh toán thành công qua SePay cho mã đơn: {}", transactionRef);
+
+            Booking booking = payment.getBooking();
+
+            payment.setPaymentStatus(PaymentStatus.COMPLETED);
+            payment.setGatewayResponseCode("00");
+            payment.setPayDate(new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
+            payment.setGatewayPayload("Sepay IPN Received");
+
+            if (booking.getPaymentOption() == BookingPaymentOption.PAY_IN_FULL) {
+                booking.setStatus(BookingStatus.CONFIRMED);
+            } else {
+                booking.setStatus(BookingStatus.PARTIALLY_PAID);
+            }
+
+            emailService.sendBookingReceiptEmail(booking.getUser().getEmail(), booking.getUser().getProfile().getFullName(), booking);
+            walletService.processBookingPaymentSuccess(booking, payment.getAmount());
+
+            paymentRepository.save(payment);
+            bookingRepository.save(booking);
+        } else {
+            log.warn("Nhận IPN SePay nhưng đơn {} không tồn tại hoặc đã được xử lý xong.", transactionRef);
         }
     }
 
@@ -353,7 +420,7 @@ public class PaymentServiceImpl implements PaymentService {
         while (itr.hasNext()) {
             String fieldName = (String) itr.next();
             String fieldValue = (String) vnp_Params.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+            if ((fieldValue != null) && (!fieldValue.isEmpty())) {
                 hashData.append(fieldName);
                 hashData.append('=');
                 hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));

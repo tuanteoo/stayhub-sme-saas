@@ -41,6 +41,13 @@ vnpay:
   version: "2.1.0"
   command: "pay"
 
+integration:
+  sepay:
+    merchant-id: ${SEPAY_MERCHANT_ID}
+    secret-key: ${SEPAY_SECRET_KEY}
+    prefix: "STAYHUB"
+    checkout-url : ${SEPAY_CHECKOUT_URL}
+
 server:
   servlet:
     context-path: /api/v1

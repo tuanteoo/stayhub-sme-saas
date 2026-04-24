@@ -1,7 +1,6 @@
 package com.stayhub.backend.Module.Booking.DTO.Request;
 
 import com.stayhub.backend.Common.Util.BookingPaymentOption;
-import com.stayhub.backend.Common.Util.PaymentMethod;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -37,10 +36,6 @@ public record BookingCreateRequest(
         @Schema(description = "Hình thức thanh toán (PAY_IN_FULL or PAY_AT_CHECKIN)", example = "PAY_IN_FULL")
         @NotNull(message = "Vui lòng chọn hình thức thanh toán")
         BookingPaymentOption paymentOption,
-
-        @Schema(description = "Cổng thanh toán (VNPAY, SEPAY)", example = "SEPAY")
-        @NotNull(message = "Vui lòng chọn cổng thanh toán")
-        PaymentMethod paymentMethod,
 
 //        String promotionCode,
 

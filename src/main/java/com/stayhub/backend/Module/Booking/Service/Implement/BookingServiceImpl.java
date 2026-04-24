@@ -254,15 +254,17 @@ public class BookingServiceImpl implements BookingService {
         }
         roomAvailabilityRepository.saveAll(availabilities);
 
+        PaymentPurpose purpose = PaymentPurpose.BOOKING_PAYMENT;
+
         String uniqueTxnRef = booking.getBookingCode() + "-" + System.currentTimeMillis() + "-";
 
         Payment payment = Payment.builder()
                 .booking(booking)
                 .user(guest)
                 .amount(booking.getDepositAmount())
-                .paymentMethod(request.paymentMethod())
+                .paymentMethod(PaymentMethod.VNPAY)
                 .paymentStatus(PaymentStatus.PENDING)
-                .paymentPurpose(PaymentPurpose.BOOKING_PAYMENT)
+                .paymentPurpose(purpose)
                 .transactionRef(uniqueTxnRef)
                 .build();
 

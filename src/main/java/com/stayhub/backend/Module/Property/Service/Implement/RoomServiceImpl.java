@@ -116,7 +116,7 @@ public class RoomServiceImpl implements RoomService {
         boolean hasDateRange = request.startDate() != null && request.endDate() != null;
 
         if (hasDatesList && hasDateRange) {
-            throw new InvalidDataException("Dữ liệu không hợp lệ: Vui lòng CHỈ truyền danh sách ngày rời rạc (dates) HOẶC khoảng thời gian (startDate, endDate). Tuyệt đối không truyền cả hai.");
+            throw new InvalidDataException("Dữ liệu không hợp lệ: Vui lòng CHỈ truyền danh sách ngày (dates) HOẶC khoảng thời gian (startDate, endDate). Tuyệt đối không truyền cả hai.");
         }
 
         if (hasDatesList) {
@@ -137,7 +137,7 @@ public class RoomServiceImpl implements RoomService {
         }
 
         List<RoomAvailability> targets = roomAvailabilityRepository
-                .findByRoom_IdAndDateInAndBookingIsNull(roomId, targetDates);
+                .findByRoom_IdAndDateIn(roomId, targetDates);
 
         Map<LocalDate, RoomAvailability> existingMap = targets.stream()
                 .collect(Collectors.toMap(RoomAvailability::getDate, a -> a));
@@ -146,6 +146,10 @@ public class RoomServiceImpl implements RoomService {
 
         for (LocalDate date : targetDates) {
             RoomAvailability availability = existingMap.getOrDefault(date, new RoomAvailability());
+
+            if (availability.getBooking() != null) {
+                continue;
+            }
 
             if (availability.getId() == null) {
                 availability.setRoom(room);
@@ -162,7 +166,6 @@ public class RoomServiceImpl implements RoomService {
             if (request.isLocked() != null) {
                 availability.setIsAvailable(!request.isLocked());
             }
-
             toSave.add(availability);
         }
 

@@ -133,31 +133,35 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal totalRoomPrice = BigDecimal.ZERO;
         List<BookingRoom> bookingRooms = new ArrayList<>();
 
-        long weekendNights = 0;
-        long weekdayNights = 0;
-        for (LocalDate date = request.checkInDate(); date.isBefore(request.checkOutDate()); date = date.plusDays(1)) {
-            if (date.getDayOfWeek() == DayOfWeek.FRIDAY || date.getDayOfWeek() == DayOfWeek.SATURDAY) {
-                weekendNights++;
-            } else {
-                weekdayNights++;
-            }
-        }
-
         int weekendSurcharge = property.getWeekendSurchargePercentage() != null ? property.getWeekendSurchargePercentage() : 0;
         BigDecimal surchargeMultiplier = BigDecimal.valueOf(100 + weekendSurcharge).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
+        for (RoomAvailability availability : availabilities) {
+            Room room = availability.getRoom();
+            LocalDate date = availability.getDate();
+
+            BigDecimal dailyPrice;
+            BigDecimal customPrice = availability.getPriceModifier();
+
+            if (customPrice != null && customPrice.compareTo(BigDecimal.ZERO) > 0) {
+                dailyPrice = customPrice;
+            }
+            else {
+                BigDecimal basePrice = room.getPricePerNight();
+                if (date.getDayOfWeek() == DayOfWeek.FRIDAY || date.getDayOfWeek() == DayOfWeek.SATURDAY) {
+                    dailyPrice = basePrice.multiply(surchargeMultiplier);
+                } else {
+                    dailyPrice = basePrice;
+                }
+            }
+
+            totalRoomPrice = totalRoomPrice.add(dailyPrice);
+        }
+
         for (Room room : rooms) {
-            BigDecimal basePrice = room.getPricePerNight();
-            BigDecimal weekendPrice = basePrice.multiply(surchargeMultiplier);
-
-            BigDecimal roomTotalForWeekday = basePrice.multiply(BigDecimal.valueOf(weekdayNights));
-            BigDecimal roomTotalForWeekend = weekendPrice.multiply(BigDecimal.valueOf(weekendNights));
-
-            totalRoomPrice = totalRoomPrice.add(roomTotalForWeekday).add(roomTotalForWeekend);
-
             bookingRooms.add(BookingRoom.builder()
                     .room(room)
-                    .priceAtBooking(basePrice)
+                    .priceAtBooking(room.getPricePerNight())
                     .build());
         }
 

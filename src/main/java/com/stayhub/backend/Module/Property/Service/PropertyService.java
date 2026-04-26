@@ -1,6 +1,7 @@
 package com.stayhub.backend.Module.Property.Service;
 
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
+import com.stayhub.backend.Module.Property.DTO.Request.CalendarUpdateRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.Model.Property;

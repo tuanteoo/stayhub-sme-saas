@@ -7,6 +7,7 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Mapper.CancellationPolicyMapper;
 import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Common.Util.*;
+import com.stayhub.backend.Module.Property.DTO.Request.CalendarUpdateRequest;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;

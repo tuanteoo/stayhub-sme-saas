@@ -29,8 +29,10 @@ public interface RoomAvailabilityRepository extends JpaRepository<RoomAvailabili
             @Param("checkOutDate") LocalDate checkOutDate
     );
 
-    // Thêm vào RoomAvailabilityRepository.java
     @Modifying
     @Query("UPDATE RoomAvailability r SET r.isAvailable = true, r.booking = null WHERE r.booking = :booking")
     void releaseRoomsByBooking(@Param("booking") Booking booking);
+
+    List<RoomAvailability> findByRoom_IdAndDateBetween(Long roomId, LocalDate startDate, LocalDate endDate);
+    List<RoomAvailability> findByRoom_IdAndDateInAndBookingIsNull(Long roomId, List<LocalDate> dates);
 }

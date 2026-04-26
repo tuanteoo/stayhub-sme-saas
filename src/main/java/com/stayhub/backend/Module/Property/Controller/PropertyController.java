@@ -3,13 +3,11 @@ package com.stayhub.backend.Module.Property.Controller;
 import com.stayhub.backend.Common.DTO.Response.PageResponse;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetails;
+import com.stayhub.backend.Module.Property.DTO.Request.CalendarUpdateRequest;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
-import com.stayhub.backend.Module.Property.Service.CancellationPolicyService;
-import com.stayhub.backend.Module.Property.Service.CategoryService;
-import com.stayhub.backend.Module.Property.Service.PropertyService;
-import com.stayhub.backend.Module.Property.Service.SubscriptionService;
+import com.stayhub.backend.Module.Property.Service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,6 +32,7 @@ public class PropertyController {
     private final CategoryService categoryService;
     private final SubscriptionService subscriptionService;
     private final CancellationPolicyService cancellationPolicyService;
+    private final RoomService roomService;
 
     @PreAuthorize("hasAuthority('ROLE_HOST')")
     @Operation(summary = "HOST - Tạo bài đăng")
@@ -290,5 +289,30 @@ public class PropertyController {
                 : "Đã tạm ngưng bài đăng thành công.";
 
         return ResponseEntity.ok(new ResponseData<>(200, message));
+    }
+
+    @Operation(summary = "HOST - Xem lịch phòng theo tháng")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @GetMapping("/host/rooms/{roomId}/calendar")
+    public ResponseEntity<ResponseData<List<CalendarDayResponse>>> getRoomCalendar(
+            @Parameter(description = "ID của phòng") @PathVariable Long roomId,
+            @Parameter(description = "Năm cần xem (VD: 2024)") @RequestParam int year,
+            @Parameter(description = "Tháng cần xem (VD: 12)") @RequestParam int month,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        List<CalendarDayResponse> response = roomService.getRoomCalendar(customUserDetails.getUser().getId(), roomId, year, month);
+        return ResponseEntity.ok(new ResponseData<>(200, "Lấy dữ liệu lịch phòng thành công.", response));
+    }
+
+    @Operation(summary = "HOST - Cập nhật lịch phòng (Khóa phòng, đổi giá theo ngày)")
+    @PreAuthorize("hasAuthority('ROLE_HOST')")
+    @PutMapping("/host/rooms/{roomId}/calendar")
+    public ResponseEntity<ResponseData<Void>> updateRoomCalendar(
+            @Parameter(description = "ID của phòng") @PathVariable Long roomId,
+            @Valid @RequestBody CalendarUpdateRequest request,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        roomService.updateRoomCalendar(customUserDetails.getUser().getId(), roomId, request);
+        return ResponseEntity.ok(new ResponseData<>(200, "Cập nhật lịch phòng thành công."));
     }
 }

@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -211,6 +212,16 @@ public class WalletServiceImpl implements WalletService {
     public void requestPayoutOTP(Long hostId, PayoutCreateRequest request) {
         var validationResult = validateAndGetPayoutEntities(hostId, request.amountPayout(), request.bankAccountId());
         User user = validationResult.wallet().getUser();
+
+        verificationTokenRepository.findByUserAndType(user, VerificationType.PAYOUT_VERIFICATION)
+                .ifPresent(existingToken -> {
+                    LocalDateTime nextAllowedRequestTime = existingToken.getExpiryDate().minusMinutes(2);
+
+                    if (LocalDateTime.now().isBefore(nextAllowedRequestTime)) {
+                        long secondsLeft = Duration.between(LocalDateTime.now(), nextAllowedRequestTime).getSeconds();
+                        throw new InvalidDataException("Bạn thao tác quá nhanh. Vui lòng đợi " + secondsLeft + " giây trước khi yêu cầu gửi lại mã OTP.");
+                    }
+                });
 
         String otpCode = String.format("%06d", new java.util.Random().nextInt(999999));
         verificationTokenRepository.deleteByUserAndType(user, VerificationType.PAYOUT_VERIFICATION);

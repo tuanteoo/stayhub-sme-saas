@@ -13,7 +13,7 @@ public record CalendarUpdateRequest(
         @Schema(description = "Ngày kết thúc, type: LocalDate, format: yyyy-MM-dd", example = "2026-05-06")
         LocalDate endDate,
 
-        @Schema(description = "Danh sách ngày rời rạc, type: LocalDate, format: yyyy-MM-dd", example = "2026-05-01, 2026-05-03, 2026-05-05")
+        @Schema(description = "Danh sách ngày rời rạc, type: LocalDate, format: yyyy-MM-dd", example = "[\"2026-05-01\", \"2026-05-03\", \"2026-05-05\"]")
         List<LocalDate> dates,
 
         @Schema(description = "Giá thay đổi", example = "1000000")

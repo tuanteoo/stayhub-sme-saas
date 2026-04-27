@@ -14,12 +14,12 @@ public record BookingCreateRequest(
         @NotNull(message = "ID căn nhà không được để trống")
         Long propertyId,
 
-        @Schema(description = "Ngày nhận phòng", example = "2026-10-10")
+        @Schema(description = "Ngày nhận phòng, type: LocalDate, format: yyyy-MM-dd", example = "2026-10-10")
         @NotNull(message = "Ngày nhận phòng không được để trống")
         @FutureOrPresent(message = "Ngày nhận phòng phải từ hôm nay trở đi")
         LocalDate checkInDate,
 
-        @Schema(description = "Ngày trả phòng", example = "2026-10-15")
+        @Schema(description = "Ngày trả phòng, type: LocalDate, format: yyyy-MM-dd", example = "2026-10-15")
         @NotNull(message = "Ngày trả phòng không được để trống")
         @Future(message = "Ngày trả phòng phải lớn hơn hôm nay")
         LocalDate checkOutDate,

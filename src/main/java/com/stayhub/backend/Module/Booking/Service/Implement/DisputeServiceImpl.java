@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,7 +54,7 @@ public class DisputeServiceImpl implements DisputeService {
         boolean isHost = booking.getBookingRooms().get(0).getRoom().getProperty().getHost().getId().equals(userId);
 
         if (!isGuest && !isHost) {
-            throw new InvalidDataException("Bạn không có quyền khiếu nại đơn hàng này.");
+            throw new AuthorizationDeniedException("Bạn không có quyền khiếu nại đơn hàng này.");
         }
 
         if (isHost) {

@@ -1,5 +1,7 @@
 package com.stayhub.backend.Common.Exception;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.stayhub.backend.Common.DTO.Response.ResponseData;
 import com.stayhub.backend.Common.DTO.Response.ResponseError;
 import com.stayhub.backend.Common.Util.ErrorCode;
@@ -8,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -21,6 +24,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @RestControllerAdvice
 @Slf4j
@@ -162,5 +166,44 @@ public class GlobalExceptionHandler {
                 .message("Dữ liệu gửi lên vượt quá độ dài cho phép (ví dụ: User-Agent quá dài).")
                 .build();
         return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ResponseError> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("Lỗi parse JSON request body: {}", ex.getMessage());
+
+        String errorMessage = "Dữ liệu yêu cầu không đúng định dạng";
+        String field = "unknown";
+        String rejectedValue = null;
+
+        Throwable cause = ex.getMostSpecificCause();
+
+        if (cause instanceof InvalidFormatException ife) {
+            field = ife.getPath().stream()
+                    .map(JsonMappingException.Reference::getFieldName)
+                    .filter(Objects::nonNull)
+                    .reduce((first, second) -> second)
+                    .orElse("unknown");
+            rejectedValue = ife.getValue() != null ? ife.getValue().toString() : "null";
+            errorMessage = String.format("Giá trị '%s' không đúng định dạng cho trường '%s'", rejectedValue, field);
+        } else if (cause instanceof JsonMappingException jme) {
+            field = jme.getPath().stream()
+                    .map(JsonMappingException.Reference::getFieldName)
+                    .filter(Objects::nonNull)
+                    .reduce((first, second) -> second)
+                    .orElse("unknown");
+            errorMessage = String.format("Trường '%s' có kiểu dữ liệu không phù hợp: %s", field, cause.getMessage());
+        } else {
+            errorMessage = "Dữ liệu yêu cầu không hợp lệ: " + cause.getMessage();
+        }
+
+        ResponseError responseError = ResponseError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("BAD_REQUEST")
+                .message(errorMessage)
+                .build();
+
+        return ResponseEntity.badRequest().body(responseError);
     }
 }

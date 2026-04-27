@@ -7,9 +7,6 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 
 public class PricingUtils {
-    /**
-     * Helper method: Tính toán giá thực tế của một phòng trong một ngày cụ thể
-     */
     public static BigDecimal calculateDailyPrice(Room room, RoomAvailability availability, BigDecimal surchargeMultiplier) {
         BigDecimal dailyPrice = room.getPricePerNight();
         if (availability.getPriceModifier() != null && availability.getPriceModifier().compareTo(BigDecimal.ZERO) > 0) {

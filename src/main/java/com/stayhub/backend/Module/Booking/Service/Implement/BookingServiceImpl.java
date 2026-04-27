@@ -138,23 +138,7 @@ public class BookingServiceImpl implements BookingService {
 
         for (RoomAvailability availability : availabilities) {
             Room room = availability.getRoom();
-            LocalDate date = availability.getDate();
-
-            BigDecimal dailyPrice;
-            BigDecimal customPrice = availability.getPriceModifier();
-
-            if (customPrice != null && customPrice.compareTo(BigDecimal.ZERO) > 0) {
-                dailyPrice = customPrice;
-            }
-            else {
-                BigDecimal basePrice = room.getPricePerNight();
-                if (date.getDayOfWeek() == DayOfWeek.FRIDAY || date.getDayOfWeek() == DayOfWeek.SATURDAY) {
-                    dailyPrice = basePrice.multiply(surchargeMultiplier);
-                } else {
-                    dailyPrice = basePrice;
-                }
-            }
-
+            BigDecimal dailyPrice = PricingUtils.calculateDailyPrice(room, availability, surchargeMultiplier);
             totalRoomPrice = totalRoomPrice.add(dailyPrice);
         }
 

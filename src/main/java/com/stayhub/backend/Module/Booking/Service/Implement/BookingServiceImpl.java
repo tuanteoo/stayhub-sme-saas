@@ -11,6 +11,7 @@ import com.stayhub.backend.Module.Booking.DTO.Response.HostBookingResponse;
 import com.stayhub.backend.Module.Booking.Model.Booking;
 import com.stayhub.backend.Module.Booking.Model.BookingRoom;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
+import com.stayhub.backend.Module.Booking.Repository.BookingSpecification;
 import com.stayhub.backend.Module.Booking.Service.BookingService;
 import com.stayhub.backend.Module.Finance.Model.Payment;
 import com.stayhub.backend.Module.Finance.Repository.PaymentRepository;
@@ -23,12 +24,17 @@ import com.stayhub.backend.Module.Property.Repository.PropertyRepository;
 import com.stayhub.backend.Module.Property.Repository.RoomAvailabilityRepository;
 import com.stayhub.backend.Module.Property.Repository.RoomRepository;
 import com.stayhub.backend.Module.Property.Repository.UserSubscriptionRepository;
+import com.stayhub.backend.Module.Review.DTO.Response.ReviewResponse;
+import com.stayhub.backend.Module.Review.Model.Review;
+import com.stayhub.backend.Module.Review.Model.ReviewImage;
+import com.stayhub.backend.Module.Review.Repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
@@ -42,7 +48,9 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +64,7 @@ public class BookingServiceImpl implements BookingService {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final PaymentRepository paymentRepository;
     private final WalletService walletService;
+    private final ReviewRepository reviewRepository;
 
     @Lazy
     @Autowired
@@ -262,13 +271,28 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public PageResponse<HostBookingResponse> getBookingsForHost(Long hostId, int page, int size) {
-        Pageable pageable = PaginationUtil.getPageable(page, size, "createdAt", "desc");
+    public PageResponse<HostBookingResponse> getBookingsForHost(Long hostId, String status, int page, int size, String sortBy, String sortDir) {
+        Pageable pageable = PaginationUtil.getPageable(page, size, sortBy, sortDir);
+        Specification<Booking> spec = BookingSpecification.hasHostId(hostId);
 
-        Page<Booking> bookingPage = bookingRepository.findBookingsByHostId(hostId, pageable);
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                BookingStatus bookingStatus = BookingStatus.valueOf(status.toUpperCase());
+                spec = spec.and(BookingSpecification.hasStatus(bookingStatus));
+            } catch (IllegalArgumentException e) {
+                throw new InvalidDataException("Trạng thái booking không hợp lệ.");
+            }
+        }
+        Page<Booking> bookingPage = bookingRepository.findAll(spec, pageable);
+
+        List<Long> bookingIds = bookingPage.getContent().stream().map(Booking::getId).toList();
+
+        Map<Long, Review> reviewMap = reviewRepository.findByBooking_IdIn(bookingIds)
+                .stream()
+                .collect(Collectors.toMap(r -> r.getBooking().getId(), r -> r));
 
         List<HostBookingResponse> hostBookingResponses = bookingPage.stream()
-                .map(this::mapToHostBookingResponse)
+                .map(booking -> mapToHostBookingResponse(booking, reviewMap.get(booking.getId())))
                 .toList();
 
         return new PageResponse<>(
@@ -281,13 +305,27 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public PageResponse<GuestBookingResponse> getBookingForGuest(Long guestId, int page, int size) {
+    public PageResponse<GuestBookingResponse> getBookingForGuest(Long guestId, String status, int page, int size, String sortBy, String sortDir) {
         Pageable pageable = PaginationUtil.getPageable(page, size, "createdAt", "desc");
+        Specification<Booking> spec = BookingSpecification.hasGuestId(guestId);
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                BookingStatus bookingStatus = BookingStatus.valueOf(status.toUpperCase());
+                spec = spec.and(BookingSpecification.hasStatus(bookingStatus));
+            } catch (IllegalArgumentException e) {
+                throw new InvalidDataException("Trạng thái booking không hợp lệ.");
+            }
+        }
+        Page<Booking> bookingPage = bookingRepository.findAll(spec, pageable);
 
-        Page<Booking> bookingPage = bookingRepository.findByUser_IdOrderByCreatedAtDesc(guestId, pageable);
+        List<Long> bookingIds = bookingPage.getContent().stream().map(Booking::getId).toList();
+
+        Map<Long, Review> reviewMap = reviewRepository.findByBooking_IdIn(bookingIds)
+                .stream()
+                .collect(Collectors.toMap(r -> r.getBooking().getId(), r -> r));
 
         List<GuestBookingResponse> bookingResponses = bookingPage.stream()
-                .map(this::mapToGuestBookingResponse)
+                .map(booking -> mapToGuestBookingResponse(booking, reviewMap.get(booking.getId())))
                 .toList();
 
         return new PageResponse<>(
@@ -445,7 +483,7 @@ public class BookingServiceImpl implements BookingService {
         return "Tuyệt vời! Chuyến đi đã hoàn tất. Cảm ơn bạn đã sử dụng StayHub.";
     }
 
-    private HostBookingResponse mapToHostBookingResponse(Booking booking) {
+    private HostBookingResponse mapToHostBookingResponse(Booking booking, Review review) {
 
         BigDecimal total = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
         BigDecimal cleaning = booking.getCleaningFee() != null ? booking.getCleaningFee() : BigDecimal.ZERO;
@@ -468,9 +506,10 @@ public class BookingServiceImpl implements BookingService {
                 .isFullyPaid(booking.getIsFullyPaid())
                 .status(booking.getStatus())
                 .createdAt(booking.getCreatedAt())
+                .review(mapToBookingReviewResponse(review))
                 .build();
     }
-    private GuestBookingResponse mapToGuestBookingResponse(Booking booking) {
+    private GuestBookingResponse mapToGuestBookingResponse(Booking booking, Review review) {
         String thumbnail = booking.getProperty().getImages().stream()
                 .filter(img -> Boolean.TRUE.equals(img.getIsThumbnail()))
                 .map(PropertyImage::getUrl)
@@ -495,6 +534,7 @@ public class BookingServiceImpl implements BookingService {
                 .totalAmount(finalTotal)
                 .status(booking.getStatus())
                 .createdAt(booking.getCreatedAt())
+                .review(mapToBookingReviewResponse(review))
                 .build();
     }
     private BigDecimal calculateRefundAmount(Booking booking) {
@@ -515,5 +555,19 @@ public class BookingServiceImpl implements BookingService {
             BigDecimal refund = amountPaid.subtract(penaltyAmount);
             return refund.compareTo(BigDecimal.ZERO) > 0 ? refund : BigDecimal.ZERO;
         }
+    }
+    private ReviewResponse mapToBookingReviewResponse(Review review) {
+        if (review == null) return null;
+        return ReviewResponse.builder()
+                .id(review.getId())
+                .rating(review.getRating())
+                .comment(review.getComment())
+                .imageUrls(review.getImages().stream()
+                        .map(ReviewImage::getImageUrl)
+                        .toList())
+                .hostReply(review.getHostReply())
+                .replyTime(review.getReplyTime())
+                .createdAt(review.getCreatedAt())
+                .build();
     }
 }

@@ -55,12 +55,30 @@ public class BookingController {
     @GetMapping("/host")
     public ResponseEntity<ResponseData<PageResponse<HostBookingResponse>>> getBookingsForHost(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Parameter(
+                    name = "status",
+                    description = "Lọc theo trạng thái đơn đặt phòng:\n" +
+                            "AWAITING_PAYMENT,   // Đang chờ khách thanh toán\n" +
+                            "    PARTIALLY_PAID,     // Đã cọc một phần\n" +
+                            "    CONFIRMED,          // Đã xác nhận (đã thanh toán đủ)\n" +
+                            "    CHECKED_IN,         // Khách đã nhận phòng\n" +
+                            "    CHECKED_OUT,        // Khách đã trả phòng\n" +
+                            "    DISPUTED,           // Có tranh chấp/khiếu nại\n" +
+                            "    COMPLETED,          // Hoàn tất (đã review, không có vấn đề gì)\n" +
+                            "    CANCELLED,          // Khách hoặc Host hủy\n" +
+                            "    REJECTED,           // Hệ thống từ chối\n" +
+                            "    EXPIRED )." +
+                            " Null thì lấy tất cả"
+            )
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         Long hostId = customUserDetails.getUser().getId();
 
-        PageResponse<HostBookingResponse> response = bookingService.getBookingsForHost(hostId, page, size);
+        PageResponse<HostBookingResponse> response = bookingService.getBookingsForHost(hostId, status, page, size, sortBy, sortDir);
 
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách đơn đặt phòng thành công", response));
     }
@@ -70,10 +88,28 @@ public class BookingController {
     @Operation(summary = "USER - Xem lịch sử các chuyến đi")
     public ResponseEntity<ResponseData<PageResponse<GuestBookingResponse>>> getMyTrips(
             @AuthenticationPrincipal CustomUserDetails currentUser,
-            @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "10") int size) {
+            @Parameter(
+                    name = "status",
+                    description = "Lọc theo trạng thái đơn đặt phòng:\n" +
+                            "AWAITING_PAYMENT,   // Đang chờ khách thanh toán\n" +
+                            "    PARTIALLY_PAID,     // Đã cọc một phần\n" +
+                            "    CONFIRMED,          // Đã xác nhận (đã thanh toán đủ)\n" +
+                            "    CHECKED_IN,         // Khách đã nhận phòng\n" +
+                            "    CHECKED_OUT,        // Khách đã trả phòng\n" +
+                            "    DISPUTED,           // Có tranh chấp/khiếu nại\n" +
+                            "    COMPLETED,          // Hoàn tất (đã review, không có vấn đề gì)\n" +
+                            "    CANCELLED,          // Khách hoặc Host hủy\n" +
+                            "    REJECTED,           // Hệ thống từ chối\n" +
+                            "    EXPIRED )." +
+                            " Null thì lấy tất cả"
+            )
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
-        PageResponse<GuestBookingResponse> response = bookingService.getBookingForGuest(currentUser.getUser().getId(), page, size);
+        PageResponse<GuestBookingResponse> response = bookingService.getBookingForGuest(currentUser.getUser().getId(), status, page, size, sortBy, sortDir);
 
         return ResponseEntity.ok(new ResponseData<>(200, "Lấy danh sách chuyến đi thành công", response));
     }

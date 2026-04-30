@@ -1,6 +1,7 @@
 package com.stayhub.backend.Module.Property.DTO.Response;
 
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
+import com.stayhub.backend.Module.Review.DTO.Response.ReviewResponse;
 import lombok.Builder;
 
 import java.math.BigDecimal;
@@ -52,6 +53,7 @@ public record PropertyDetailResponse(
         String rentalTypeName,
         String rentalTypeSlug,
 
-        List<RoomResponse> rooms
+        List<RoomResponse> rooms,
+        List<ReviewResponse> reviews
 ) {
 }

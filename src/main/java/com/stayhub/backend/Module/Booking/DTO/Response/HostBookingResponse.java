@@ -1,6 +1,7 @@
 package com.stayhub.backend.Module.Booking.DTO.Response;
 
 import com.stayhub.backend.Common.Util.BookingStatus;
+import com.stayhub.backend.Module.Review.DTO.Response.ReviewResponse;
 import lombok.Builder;
 
 import java.math.BigDecimal;
@@ -10,15 +11,16 @@ import java.time.LocalDateTime;
 @Builder
 public record HostBookingResponse(
         String bookingCode,
-        String guestName,       // Tên khách hàng
-        String propertyName,    // Tên chỗ ở
-        LocalDate checkInDate,  // Ngày đến
-        LocalDate checkOutDate, // Ngày đi
-        Integer totalGuests,    // Số lượng khách
-        BigDecimal finalAmount, // Tổng tiền đơn hàng
-        BigDecimal amountPaid,  // Số tiền ĐÃ thanh toán (Cọc hoặc toàn bộ)
-        Boolean isFullyPaid,    // Trạng thái thanh toán đủ
-        BookingStatus status,   // Trạng thái Booking
-        LocalDateTime createdAt
+        String guestName,
+        String propertyName,
+        LocalDate checkInDate,
+        LocalDate checkOutDate,
+        Integer totalGuests,
+        BigDecimal finalAmount,
+        BigDecimal amountPaid,
+        Boolean isFullyPaid,
+        BookingStatus status,
+        LocalDateTime createdAt,
+        ReviewResponse review
 ) {
 }

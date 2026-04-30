@@ -1,6 +1,7 @@
 package com.stayhub.backend.Module.Booking.DTO.Response;
 
 import com.stayhub.backend.Common.Util.BookingStatus;
+import com.stayhub.backend.Module.Review.DTO.Response.ReviewResponse;
 import lombok.Builder;
 
 import java.math.BigDecimal;
@@ -20,6 +21,7 @@ public record GuestBookingResponse(
         LocalDate checkOutDate,
         BigDecimal totalAmount,
         BookingStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        ReviewResponse review
 ) {
 }

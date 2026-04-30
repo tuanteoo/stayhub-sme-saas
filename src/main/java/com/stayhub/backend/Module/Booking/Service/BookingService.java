@@ -10,8 +10,8 @@ import com.stayhub.backend.Module.Booking.Model.Booking;
 
 public interface BookingService {
     String createBooking(BookingCreateRequest request, Long id);
-    PageResponse<HostBookingResponse> getBookingsForHost(Long hostId, int page, int size);
-    PageResponse<GuestBookingResponse> getBookingForGuest(Long guestId, int page, int size);
+    PageResponse<HostBookingResponse> getBookingsForHost(Long hostId, String status, int page, int size, String sortBy, String sortDir);
+    PageResponse<GuestBookingResponse> getBookingForGuest(Long guestId, String status, int page, int size, String sortBy, String sortDir);
     void releaseBookingInternal(Booking booking, BookingStatus targetStatus, Long cancelledBy);
     String cancelBookingByGuest(Long guestId, String bookingCode);
     String hostCheckIn(Long hostId, String bookingCode);

@@ -7,7 +7,6 @@ import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Mapper.CancellationPolicyMapper;
 import com.stayhub.backend.Common.Mapper.RoomMapper;
 import com.stayhub.backend.Common.Util.*;
-import com.stayhub.backend.Module.Property.DTO.Request.CalendarUpdateRequest;
 import com.stayhub.backend.Module.Property.DTO.Request.PropertyApprovalRequest;
 import com.stayhub.backend.Module.Property.DTO.Response.*;
 import com.stayhub.backend.Module.Identity.DTO.Response.HostInfoResponse;
@@ -19,6 +18,10 @@ import com.stayhub.backend.Module.Property.DTO.Request.PropertyCreateRequest;
 import com.stayhub.backend.Module.Property.Model.*;
 import com.stayhub.backend.Module.Property.Repository.*;
 import com.stayhub.backend.Module.Property.Service.PropertyService;
+import com.stayhub.backend.Module.Review.DTO.Response.ReviewResponse;
+import com.stayhub.backend.Module.Review.Model.Review;
+import com.stayhub.backend.Module.Review.Model.ReviewImage;
+import com.stayhub.backend.Module.Review.Repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -49,6 +52,7 @@ public class PropertyServiceImpl implements PropertyService {
     private final AmenityRepository amenityRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final CancellationPolicyRepository cancellationPolicyRepository;
+    private final ReviewRepository reviewRepository;
     private final CancellationPolicyMapper cancellationPolicyMapper;
     private final RoomMapper roomMapper;
 
@@ -444,6 +448,32 @@ public class PropertyServiceImpl implements PropertyService {
 
         CancellationPolicyResponse policyResponse = cancellationPolicyMapper.toResponse(property.getCancellationPolicy());
 
+        List<Review> reviews = reviewRepository.findByProperty_IdAndIsVisibleTrueOrderByCreatedAtDesc(property.getId());
+        List<ReviewResponse> reviewResponses = reviews.stream().map(review -> {
+            String guestName = review.getUser().getEmail();
+            String guestAvatar = null;
+            if (review.getUser().getProfile() != null) {
+                guestName = review.getUser().getProfile().getFullName();
+                guestAvatar = review.getUser().getProfile().getAvatarUrl();
+            }
+
+            List<String> reviewImageUrls = review.getImages().stream()
+                    .map(ReviewImage::getImageUrl)
+                    .toList();
+
+            return ReviewResponse.builder()
+                    .id(review.getId())
+                    .guestName(guestName)
+                    .guestAvatarUrl(guestAvatar)
+                    .rating(review.getRating())
+                    .comment(review.getComment())
+                    .imageUrls(reviewImageUrls)
+                    .hostReply(review.getHostReply())
+                    .replyTime(review.getReplyTime())
+                    .createdAt(review.getCreatedAt())
+                    .build();
+        }).toList();
+
         return PropertyDetailResponse.builder()
                 .id(property.getId())
                 .name(property.getName())
@@ -489,6 +519,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .amenities(new ArrayList<>(allAmenities))
                 .imageUrls(allImageUrls)
                 .rooms(roomResponses)
+                .reviews(reviewResponses)
                 .build();
     }
 

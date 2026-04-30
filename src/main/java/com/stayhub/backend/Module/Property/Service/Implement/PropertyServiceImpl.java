@@ -743,7 +743,6 @@ public class PropertyServiceImpl implements PropertyService {
                 categorySlug, PropertyStatus.ACTIVE, top8Pageable
         );
 
-        // 3. Map sang Response
         return propertyPage.stream()
                 .map(this::mapToPropertyCardResponse)
                 .toList();
@@ -775,10 +774,18 @@ public class PropertyServiceImpl implements PropertyService {
         int totalBathrooms = property.getRooms().stream().mapToInt(r -> r.getNumBathrooms() != null ? r.getNumBathrooms() : 0).sum();
 
         return new PropertyCardResponse(
-                property.getId(), property.getName(), property.getSlug(),
-                property.getProvince(), property.getDistrict(), startingPrice,
-                thumbnailUrl, property.getRatingAvg(),
-                totalGuests, totalRooms, totalBeds, totalBathrooms,
+                property.getId(),
+                property.getName(),
+                property.getSlug(),
+                property.getProvince(),
+                property.getDistrict(),
+                startingPrice,
+                thumbnailUrl,
+                property.getRatingAvg(),
+                totalGuests,
+                totalRooms,
+                totalBeds,
+                totalBathrooms,
                 new ArrayList<>(allAmenityNames)
         );
     }

@@ -4,6 +4,8 @@ import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.BookingStatus;
 import com.stayhub.backend.Module.Booking.Model.Booking;
+import com.stayhub.backend.Module.Property.Model.Property;
+import com.stayhub.backend.Module.Property.Repository.PropertyRepository;
 import com.stayhub.backend.Module.Review.DTO.Request.HostReplyRequest;
 import com.stayhub.backend.Module.Review.DTO.Request.ReviewCreateRequest;
 import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
@@ -25,6 +27,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final BookingRepository bookingRepository;
     private final ReviewRepository reviewRepository;
+    private final PropertyRepository propertyRepository;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -44,6 +47,8 @@ public class ReviewServiceImpl implements ReviewService {
             throw new InvalidDataException("Bạn đã đánh giá đơn đặt phòng này rồi.");
         }
 
+        Property property = booking.getProperty();
+
         Review review = Review.builder()
                 .booking(booking)
                 .user(booking.getUser())
@@ -61,6 +66,20 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         reviewRepository.save(review);
+
+        int currentReviewCount = property.getReviewCount() ;
+        double currentRatingAvg = property.getRatingAvg();
+
+        double newTotalScore = (currentRatingAvg * currentReviewCount) + request.rating();
+        int newReviewCount = currentReviewCount + 1;
+        double newRatingAvg = newTotalScore / newReviewCount;
+
+        newRatingAvg = Math.round(newRatingAvg * 10.0) / 10.0;
+
+        property.setReviewCount(newReviewCount);
+        property.setRatingAvg(newRatingAvg);
+
+        propertyRepository.save(property);
     }
 
     @Transactional(rollbackFor = Exception.class)

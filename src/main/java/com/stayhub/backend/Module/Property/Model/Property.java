@@ -147,9 +147,6 @@ public class Property {
     @JoinColumn(name = "cancellation_policy_id")
     private CancellationPolicy cancellationPolicy;
 
-    // ==========================================
-    // THỐNG KÊ ĐÁNH GIÁ (Dùng để hiển thị ngoài Card)
-    // ==========================================
     @Column(name = "rating_avg")
     @Builder.Default
     private Double ratingAvg = 0.0;

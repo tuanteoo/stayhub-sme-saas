@@ -26,6 +26,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,17 +58,23 @@ public class DisputeServiceImpl implements DisputeService {
             throw new AuthorizationDeniedException("Bạn không có quyền khiếu nại đơn hàng này.");
         }
 
-        if (isHost) {
-            if (booking.getStatus() != BookingStatus.CHECKED_IN && booking.getStatus() != BookingStatus.CHECKED_OUT) {
-                throw new InvalidDataException("Chủ nhà chỉ có thể khiếu nại khi khách đang lưu trú hoặc vừa Check-out (trước khi đơn hoàn tất).");
-            }
+        BookingStatus bookingStatus = booking.getStatus();
+
+        List<BookingStatus> allowedStatuses = List.of(
+                BookingStatus.CONFIRMED,
+                BookingStatus.PARTIALLY_PAID,
+                BookingStatus.CHECKED_IN,
+                BookingStatus.CHECKED_OUT
+        );
+
+        if (!allowedStatuses.contains(bookingStatus)) {
+            throw new InvalidDataException("Chỉ có thể tạo khiếu nại đối với đơn đặt phòng đã thanh toán hoặc đang diễn ra.");
         }
 
-        if (isGuest) {
-            if (booking.getStatus() != BookingStatus.CONFIRMED &&
-                    booking.getStatus() != BookingStatus.CHECKED_IN &&
-                    booking.getStatus() != BookingStatus.CHECKED_OUT) {
-                throw new InvalidDataException("Khách hàng chỉ có thể khiếu nại từ lúc nhận phòng đến trước khi đơn hoàn tất.");
+        if (bookingStatus == BookingStatus.CHECKED_OUT) {
+            LocalDateTime checkoutTime = booking.getUpdatedAt();
+            if (checkoutTime.plusDays(1).isBefore(LocalDateTime.now())) {
+                throw new InvalidDataException("Đã vượt quá thời hạn 24 giờ kể từ lúc trả phòng. Hệ thống từ chối tiếp nhận khiếu nại.");
             }
         }
 

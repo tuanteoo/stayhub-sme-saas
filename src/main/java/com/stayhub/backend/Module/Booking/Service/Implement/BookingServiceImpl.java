@@ -289,7 +289,11 @@ public class BookingServiceImpl implements BookingService {
 
         Map<Long, Review> reviewMap = reviewRepository.findByBooking_IdIn(bookingIds)
                 .stream()
-                .collect(Collectors.toMap(r -> r.getBooking().getId(), r -> r));
+                .collect(Collectors.toMap(
+                        r -> r.getBooking().getId(),
+                        r -> r,
+                        (existing, replacement) -> existing
+                ));
 
         List<HostBookingResponse> hostBookingResponses = bookingPage.stream()
                 .map(booking -> mapToHostBookingResponse(booking, reviewMap.get(booking.getId())))
@@ -322,7 +326,11 @@ public class BookingServiceImpl implements BookingService {
 
         Map<Long, Review> reviewMap = reviewRepository.findByBooking_IdIn(bookingIds)
                 .stream()
-                .collect(Collectors.toMap(r -> r.getBooking().getId(), r -> r));
+                .collect(Collectors.toMap(
+                        r -> r.getBooking().getId(),
+                        r -> r,
+                        (existing, replacement) -> existing
+                ));
 
         List<GuestBookingResponse> bookingResponses = bookingPage.stream()
                 .map(booking -> mapToGuestBookingResponse(booking, reviewMap.get(booking.getId())))

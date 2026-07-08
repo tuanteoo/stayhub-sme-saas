@@ -1,0 +1,32 @@
+package com.stayhub.backend.Module.Property.Model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "room_images")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RoomImage {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id", nullable = false)
+    private Room room;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String url;
+
+    @Column(name = "is_thumbnail")
+    @Builder.Default
+    private Boolean isThumbnail = false;
+
+    @Column(name = "display_order")
+    @Builder.Default
+    private Integer displayOrder = 0;
+}

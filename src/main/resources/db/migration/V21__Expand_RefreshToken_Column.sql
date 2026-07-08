@@ -1,0 +1,4 @@
+ALTER TABLE refresh_tokens
+ALTER COLUMN token TYPE TEXT,
+ALTER COLUMN device_info TYPE TEXT,
+ALTER COLUMN ip_address TYPE TEXT;

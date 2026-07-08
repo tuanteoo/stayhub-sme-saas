@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px; }
+        .header { text-align: center; background-color: #ff385c; color: white; padding: 20px; border-radius: 10px 10px 0 0; }
+        .content { padding: 20px; }
+        .plan-box { background-color: #f8f9fa; border-left: 4px solid #ff385c; padding: 15px; margin: 20px 0; }
+        .btn { display: inline-block; padding: 12px 25px; background-color: #ff385c; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>Chào mừng đến với Cộng đồng StayHub Host! 🏡</h2>
+    </div>
+    <div class="content">
+        <p>Chào <b><span th:text="${hostName}"></span></b>,</p>
+        <p>Tuyệt vời! Hồ sơ đăng ký trở thành Đối tác Chủ nhà của bạn đã được đội ngũ StayHub kiểm duyệt và phê duyệt thành công.</p>
+
+        <div class="plan-box">
+            <h3 style="margin-top: 0;">🎁 Quà tặng khởi đầu: Gói FREE (Miễn Phí)</h3>
+            <p>Để giúp bạn dễ dàng bắt đầu, chúng tôi đã tự động kích hoạt <b>Gói Miễn Phí (Trọn đời)</b> cho tài khoản của bạn. Quyền lợi hiện tại:</p>
+            <ul>
+                <li>Đăng tối đa <b>02 chỗ ở</b> lên nền tảng.</li>
+                <li>Hoa hồng chỉ thanh toán khi có đơn đặt phòng thành công.</li>
+            </ul>
+        </div>
+
+        <p>💡 <b>Bạn muốn mở rộng kinh doanh?</b><br>
+            Nếu bạn đang quản lý nhiều chuỗi căn hộ hoặc muốn giảm thiểu mức phí hoa hồng, hãy tham khảo các gói <b>PREMIUM</b> và <b>BUSINESS</b> của chúng tôi với vô vàn đặc quyền (Hạn mức nợ linh hoạt, Hỗ trợ 24/7).</p>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="https://getstayhub.me/host/dashboard" class="btn">Truy cập Dashboard ngay</a>
+        </div>
+
+        <p style="margin-top: 30px; font-size: 12px; color: #888;">Cảm ơn bạn đã lựa chọn đồng hành cùng StayHub!</p>
+    </div>
+</div>
+</body>
+</html>

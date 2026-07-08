@@ -5,6 +5,10 @@ spring:
     active: dev
   flyway:
     enabled: true
+  jpa:
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
   mail:
     from: stayhub.noreply@gmail.com
     host: smtp.gmail.com
@@ -22,13 +26,25 @@ application:
   security:
     jwt:
       secret-key: ${SECRET_KEY}
-      expiration: 86400
+      expiration-ms: 900000
       refresh-token:
-        expiration: 604800000
+        expiration-ms: 604800000
+  frontend:
+    url: "https://getstayhub.me"
+
+vnpay:
+  tmn-code: ${VNPAY_TMN_CODE}
+  hash-secret: ${VNPAY_HASH_SECRET}
+  pay-url: ${VNPAY_PAY_URL}
+  return-url: ${VNPAY_RETURN_URL}
+  api-url: ${VNPAY_API_URL}
+  version: "2.1.0"
+  command: "pay"
 
 server:
   servlet:
     context-path: /api/v1
+  address: 127.0.0.1
 
 springdoc:
   api-docs:
@@ -39,5 +55,20 @@ springdoc:
     tags-sorter: alpha
     disable-swagger-default-url: true
     display-request-duration: true
+    try-it-out-enabled: true
+    supported-submit-methods: ["get", "post", "put", "delete", "patch"]
+    show-extensions: true
+    show-common-extensions: true
   show-actuator: true
   paths-to-match: /**
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  writer-with-default-pretty-printer: true
+
+logging:
+  file:
+    name: /home/ubuntu/app/logs/app.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  level:
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR

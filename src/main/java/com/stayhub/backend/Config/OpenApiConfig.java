@@ -24,7 +24,8 @@ public class OpenApiConfig {
                         .description("API Documentation for Homestay Project")
                         .license(new License().name("Apache 2.0").url("http://springdoc.org")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8080").description("Local Environment")
+                        new Server().url("http://localhost:8081/api/v1").description("Local Environment"),
+                        new Server().url("https://api.getstayhub.me/api/v1").description("Production Environment")
                 ))
                 // Cấu hình Security (JWT) cho Swagger
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))

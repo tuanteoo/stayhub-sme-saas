@@ -26,6 +26,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.stayhub.backend.Common.Util.PaymentMethod;
 import java.util.List;
 import java.util.Map;
 
@@ -38,29 +39,33 @@ public class FinanceController {
     private final WalletService walletService;
     private final BankAccountService bankAccountService;
 
-    @GetMapping("/vnpay/booking/create-url")
+    @GetMapping("/{paymentMethod}/booking/create-url")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    @Operation(summary = "USER - Tạo URL thanh toán VNPAY cho booking")
-    public ResponseEntity<ResponseData<String>> createVNPayUrl(
+    @Operation(summary = "USER - Tạo URL thanh toán cho booking")
+    public ResponseEntity<ResponseData<String>> createPaymentUrl(
+            @PathVariable String paymentMethod,
             @RequestParam String bookingCode,
             HttpServletRequest request) {
 
-        String paymentUrl = paymentService.createBookingVNPayUrl(bookingCode, request);
+        PaymentMethod method = PaymentMethod.valueOf(paymentMethod.toUpperCase());
+        String paymentUrl = paymentService.createBookingPaymentUrl(method, bookingCode, request);
 
         return ResponseEntity.ok(
                 new ResponseData<>(200, "Tạo URL thanh toán thành công", paymentUrl)
         );
     }
 
-    @GetMapping("/vnpay/subscription/create-url")
+    @GetMapping("/{paymentMethod}/subscription/create-url")
     @PreAuthorize("hasAuthority('ROLE_HOST')")
-    @Operation(summary = "HOST - Tạo URL thanh toán VNPAY để đăng ký/nâng cấp gói cước")
-    public ResponseEntity<ResponseData<String>> createSubscriptionVNPayUrl(
+    @Operation(summary = "HOST - Tạo URL thanh toán để đăng ký/nâng cấp gói cước")
+    public ResponseEntity<ResponseData<String>> createSubscriptionPaymentUrl(
+            @PathVariable String paymentMethod,
             @RequestParam Long planId,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             HttpServletRequest request) {
 
-        String paymentUrl = paymentService.createSubscriptionVNPayUrl(planId, userDetails.getUser().getId(), request);
+        PaymentMethod method = PaymentMethod.valueOf(paymentMethod.toUpperCase());
+        String paymentUrl = paymentService.createSubscriptionPaymentUrl(method, planId, userDetails.getUser().getId(), request);
 
         return ResponseEntity.ok(
                 new ResponseData<>(200, "Tạo URL thanh toán VNPAY thành công", paymentUrl)
@@ -68,9 +73,12 @@ public class FinanceController {
     }
 
     @GetMapping("/vnpay/ipn")
-    @Operation(summary = "(No testing required)VNPAY IPN Webhook")
-    public ResponseEntity<Map<String, String>> processVNPayIPN(HttpServletRequest request) {
-        Map<String, String> response = paymentService.processVnPayIpn(request);
+    @Operation(summary = "(No testing required) IPN Webhook cho các cổng thanh toán")
+    public ResponseEntity<Map<String, String>> processIPN(
+            @PathVariable String paymentMethod,
+            HttpServletRequest request) {
+        PaymentMethod method = PaymentMethod.valueOf(paymentMethod.toUpperCase());
+        Map<String, String> response = paymentService.processIpn(method, request);
         return ResponseEntity.ok(response);
     }
 

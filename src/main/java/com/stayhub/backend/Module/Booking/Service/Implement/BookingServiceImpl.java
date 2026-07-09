@@ -30,6 +30,8 @@ import com.stayhub.backend.Module.Review.Model.ReviewImage;
 import com.stayhub.backend.Module.Review.Repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import com.stayhub.backend.Module.Booking.Event.BookingCreatedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -65,6 +67,7 @@ public class BookingServiceImpl implements BookingService {
     private final PaymentRepository paymentRepository;
     private final WalletService walletService;
     private final ReviewRepository reviewRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Lazy
     @Autowired
@@ -267,6 +270,8 @@ public class BookingServiceImpl implements BookingService {
 
         paymentRepository.save(payment);
 
+        applicationEventPublisher.publishEvent(new BookingCreatedEvent(this, booking));
+
         return booking.getBookingCode();
     }
 
@@ -405,7 +410,7 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal refundAmount = calculateRefundAmount(booking);
 
         if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
-            boolean isRefunded = paymentService.refundVnPayTransaction(originalPayment, refundAmount);
+            boolean isRefunded = paymentService.refundTransaction(PaymentMethod.VNPAY, originalPayment, refundAmount);
 
             if (!isRefunded) {
                 throw new AppException(ErrorCode.PAYMENT_FAILED);

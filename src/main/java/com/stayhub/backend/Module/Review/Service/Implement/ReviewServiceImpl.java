@@ -14,6 +14,8 @@ import com.stayhub.backend.Module.Review.Model.ReviewImage;
 import com.stayhub.backend.Module.Review.Repository.ReviewRepository;
 import com.stayhub.backend.Module.Review.Service.ReviewService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
+import com.stayhub.backend.Module.Review.Event.ReviewCreatedEvent;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +29,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final BookingRepository bookingRepository;
     private final ReviewRepository reviewRepository;
-    private final PropertyRepository propertyRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -66,20 +68,8 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         reviewRepository.save(review);
-
-        int currentReviewCount = property.getReviewCount() ;
-        double currentRatingAvg = property.getRatingAvg();
-
-        double newTotalScore = (currentRatingAvg * currentReviewCount) + request.rating();
-        int newReviewCount = currentReviewCount + 1;
-        double newRatingAvg = newTotalScore / newReviewCount;
-
-        newRatingAvg = Math.round(newRatingAvg * 10.0) / 10.0;
-
-        property.setReviewCount(newReviewCount);
-        property.setRatingAvg(newRatingAvg);
-
-        propertyRepository.save(property);
+        
+        applicationEventPublisher.publishEvent(new ReviewCreatedEvent(this, review));
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -18,6 +18,8 @@ import com.stayhub.backend.Module.Identity.Security.JwtTokenProvider;
 import com.stayhub.backend.Module.Identity.Service.AuthService;
 import com.stayhub.backend.Common.Service.EmailService;
 import com.stayhub.backend.Module.Property.Repository.PropertySpecification;
+import org.springframework.context.ApplicationEventPublisher;
+import com.stayhub.backend.Module.Identity.Event.UserRegisteredEvent;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final CustomUserDetailsService customUserDetailsService;
     private final HostDetailRepository hostDetailRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -112,6 +115,9 @@ public class AuthServiceImpl implements AuthService {
                 verificationToken.getToken()
         );
         log.info("User {} đăng ký thành công. Đang gửi email xác thực ngầm...", user.getEmail());
+        
+        applicationEventPublisher.publishEvent(new UserRegisteredEvent(this, user));
+        
         return "Đăng ký tài khoản thành công. Vui lòng kiểm tra email để xác thực.";
     }
 

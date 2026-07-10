@@ -1,4 +1,4 @@
-name: Deploy Spring Boot to AWS (Develop)
+name: CI/CD Pipeline for StayHub Backend
 
 on:
   push:
@@ -6,45 +6,46 @@ on:
       - develop
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout mã nguồn
+      - name: Checkout mã nguồn từ GitHub
         uses: actions/checkout@v4
 
-      - name: Thiết lập môi trường Java 17
-        uses: actions/setup-java@v4
+      - name: Đăng nhập vào hệ thống Docker Hub
+        uses: docker/login-action@v3
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_ACCESSTOKEN }}
 
-      - name: Kiểm tra kết nối mạng tới AWS
-        run: nc -zv -w 5 ${{ secrets.EC2_HOST }} 22
+      - name: Thiết lập cơ chế Buildx để build Docker Image tối ưu
+        uses: docker/setup-buildx-action@v3
 
-      - name: Đóng gói ứng dụng bằng Maven
-        run: mvn clean package -Dmaven.test.skip=true
-
-      - name: Đổi tên file Jar thành backend.jar
-        run: |
-          rm -f target/*-plain.jar # Xóa file plain 
-          mv target/*.jar target/backend.jar
-
-      - name: Đẩy tệp thực thi lên máy chủ AWS
-        uses: appleboy/scp-action@v0.1.7
+      - name: Build mã nguồn và Push Image lên Docker Hub
+        uses: docker/build-push-action@v5
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "target/backend.jar"
-          target: "/home/ubuntu/app/"
-          strip_components: 1
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/stayhub-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Thực thi và khởi động lại dịch vụ trên AWS
+  deploy-to-server:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: SSH vào Server AWS và cập nhật ứng dụng không downtime
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            sudo systemctl restart backend
+            cd ~/app
+            
+            echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
+            
+            docker pull ${{ secrets.DOCKER_USERNAME }}/stayhub-backend:latest
+            
+            docker compose up -d backend_app

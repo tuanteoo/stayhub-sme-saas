@@ -60,4 +60,4 @@ jobs:
             
             docker pull ${{ secrets.DOCKER_USERNAME }}/stayhub-backend:latest
             
-            docker compose up -d backend_app
+            docker compose up -d app_blue

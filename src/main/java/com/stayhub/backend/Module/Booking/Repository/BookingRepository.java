@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -24,5 +25,5 @@ public interface BookingRepository extends JpaRepository<Booking,Long>, JpaSpeci
     Page<Booking> findBookingsByHostId(@Param("hostId") Long hostId, Pageable pageable);
 
     List<Booking> findByStatusAndUpdatedAtBefore(BookingStatus status, LocalDateTime time);
-    List<Booking> findByStatus(BookingStatus status);
+    List<Booking> findByStatusAndCheckOutDateLessThanEqual(BookingStatus status, LocalDate date);
 }

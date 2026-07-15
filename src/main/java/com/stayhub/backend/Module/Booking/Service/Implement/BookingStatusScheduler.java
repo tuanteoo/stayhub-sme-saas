@@ -6,6 +6,7 @@ import com.stayhub.backend.Module.Booking.Repository.BookingRepository;
 import com.stayhub.backend.Module.Finance.Service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,12 @@ public class BookingStatusScheduler {
     private final BookingRepository bookingRepository;
     private final WalletService walletService;
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 */30 * * * *")
+    @SchedulerLock(
+            name = "autoCheckoutTask",
+            lockAtLeastFor = "5m",
+            lockAtMostFor = "14m"
+    )
     @Transactional(rollbackFor = Exception.class)
     public void autoCompleteCheckedOutBookings() {
         log.info("Bắt đầu quét các đơn hàng CHECKED_OUT quá 24h...");
@@ -52,12 +58,19 @@ public class BookingStatusScheduler {
         }
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 */15 * * * *")
+    @SchedulerLock(
+            name = "autoCheckoutTask",
+            lockAtLeastFor = "5m",
+            lockAtMostFor = "14m"
+    )
     @Transactional(rollbackFor = Exception.class)
     public void autoCheckoutOverdueBookings() {
         log.info("[SCHEDULER] Bắt đầu quét các booking quá giờ trả phòng...");
 
-        List<Booking> checkedInBookings = bookingRepository.findByStatus(BookingStatus.CHECKED_IN);
+        LocalDate today = LocalDate.now();
+        List<Booking> checkedInBookings = bookingRepository.findByStatusAndCheckOutDateLessThanEqual(BookingStatus.CHECKED_IN, today);
+
         int processedCount = 0;
         LocalDateTime now = LocalDateTime.now();
 
@@ -80,6 +93,10 @@ public class BookingStatusScheduler {
                 processedCount++;
                 log.info("[SCHEDULER] Đã Auto-checkout thành công Booking Code: {}", booking.getBookingCode());
             }
+        }
+
+        if (processedCount > 0) {
+            log.info("Hoàn tất quét. Đã xử lý auto-checkout cho {} booking.", processedCount);
         }
 
         log.info("[SCHEDULER] Hoàn tất quét. Đã xử lý auto-checkout cho {} booking.", processedCount);

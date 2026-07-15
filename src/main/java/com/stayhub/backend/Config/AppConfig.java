@@ -3,9 +3,13 @@ package com.stayhub.backend.Config;
 import com.stayhub.backend.Module.Identity.Security.CustomUserDetailsService;
 import com.stayhub.backend.Module.Identity.Security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
+import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -25,6 +29,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import javax.sql.DataSource;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -33,6 +38,7 @@ import java.util.concurrent.Executor;
 @EnableMethodSecurity
 @EnableAsync
 @EnableScheduling
+@EnableSchedulerLock(defaultLockAtMostFor = "15m")
 @RequiredArgsConstructor
 public class AppConfig {
     private final CustomUserDetailsService customUserDetailsService;
@@ -108,5 +114,15 @@ public class AppConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public LockProvider lockProvider(DataSource dataSource) {
+        return new JdbcTemplateLockProvider(
+                JdbcTemplateLockProvider.Configuration.builder()
+                        .withJdbcTemplate(new JdbcTemplate(dataSource))
+                        .usingDbTime()
+                        .build()
+        );
     }
 }

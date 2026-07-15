@@ -5,6 +5,7 @@ import com.stayhub.backend.Common.Exception.AppException;
 import com.stayhub.backend.Common.Exception.InvalidDataException;
 import com.stayhub.backend.Common.Exception.ResourceNotFoundException;
 import com.stayhub.backend.Common.Util.*;
+import com.stayhub.backend.Config.RabbitMQConfig;
 import com.stayhub.backend.Module.Booking.DTO.Request.BookingCreateRequest;
 import com.stayhub.backend.Module.Booking.DTO.Response.GuestBookingResponse;
 import com.stayhub.backend.Module.Booking.DTO.Response.HostBookingResponse;
@@ -30,6 +31,7 @@ import com.stayhub.backend.Module.Review.Model.ReviewImage;
 import com.stayhub.backend.Module.Review.Repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationEventPublisher;
 import com.stayhub.backend.Module.Booking.Event.BookingCreatedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +70,7 @@ public class BookingServiceImpl implements BookingService {
     private final WalletService walletService;
     private final ReviewRepository reviewRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final RabbitTemplate rabbitTemplate;
 
     @Lazy
     @Autowired
@@ -121,7 +124,7 @@ public class BookingServiceImpl implements BookingService {
         // BƯỚC 2: KHÓA DATABASE (PESSIMISTIC LOCK) ĐỂ CHỐNG DOUBLE-BOOKING
         // =========================================================================================
         List<RoomAvailability> availabilities = roomAvailabilityRepository
-                .findAndLockAvailabilities(requestedRoomIds, request.checkInDate(), request.checkOutDate());
+                .findAvailabilities(requestedRoomIds, request.checkInDate(), request.checkOutDate());
 
         // Kiểm tra xem phòng đã được sinh lịch đủ chưa
         long expectedDays = totalNights * requestedRoomIds.size();
@@ -271,6 +274,9 @@ public class BookingServiceImpl implements BookingService {
         paymentRepository.save(payment);
 
         applicationEventPublisher.publishEvent(new BookingCreatedEvent(this, booking));
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.BOOKING_EXCHANGE, RabbitMQConfig.ROUTING_KEY_CREATED, booking.getBookingCode());
+        log.info("Đã gửi mã đơn hàng {} vào hàng đợi chờ thanh toán.", booking.getBookingCode());
 
         return booking.getBookingCode();
     }

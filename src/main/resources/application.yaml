@@ -9,6 +9,13 @@ spring:
     properties:
       hibernate:
         default_batch_fetch_size: 100
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+    publisher-confirm-type: correlated
+    publisher-returns: true
   mail:
     from: stayhub.noreply@gmail.com
     host: smtp.gmail.com

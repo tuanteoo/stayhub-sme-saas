@@ -11,6 +11,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -205,5 +206,19 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(responseError);
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ResponseError> handleOptimisticLockingFailure(ObjectOptimisticLockingFailureException ex) {
+        log.warn("Tranh chấp đặt phòng xảy ra do cập nhật đồng thời: {}", ex.getMessage());
+
+        ResponseError responseError = ResponseError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("CONFLICT")
+                .message("Rất tiếc, phòng bạn chọn vừa được khách khác đặt nhanh tay hơn. Vui lòng thử lại hoặc chọn ngày khác!")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(responseError);
     }
 }

@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
-      - name: Checkout mã nguồn từ GitHub (để lấy file docker-compose.yml)
+      - name: Checkout mã nguồn từ GitHub
         uses: actions/checkout@v4
 
       - name: Copy tệp cấu hình Docker Compose lên Server
@@ -47,7 +47,7 @@ jobs:
           source: "docker-compose.yml"
           target: "~/app"
 
-      - name: SSH vào Server AWS và cập nhật ứng dụng không downtime
+      - name: SSH vào Server AWS và cập nhật ứng dụng không gián đoạn
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -57,7 +57,26 @@ jobs:
             cd ~/app
             
             echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
+            docker compose pull
             
-            docker pull ${{ secrets.DOCKER_USERNAME }}/stayhub-backend:latest
+            if docker ps | grep -q "stayhub-backend-blue"; then
+                echo "Môi trường Blue đang chạy. Tiến hành cập nhật Green..."
+                docker compose up -d app_green
             
-            docker compose up -d app_blue
+                echo "Đang chờ 20 giây để hệ thống Green khởi động..."
+                sleep 20
+            
+                docker compose exec nginx nginx -s reload
+                docker compose stop app_blue
+                echo "Cập nhật thành công! Môi trường Green đang phục vụ."
+            else
+                echo "Môi trường Green đang chạy hoặc hệ thống mới tinh. Tiến hành cập nhật Blue..."
+                docker compose up -d app_blue
+            
+                echo "Đang chờ 20 giây để hệ thống Blue khởi động..."
+                sleep 20
+            
+                docker compose exec nginx nginx -s reload
+                docker compose stop app_green
+                echo "Cập nhật thành công! Môi trường Blue đang phục vụ."
+            fi

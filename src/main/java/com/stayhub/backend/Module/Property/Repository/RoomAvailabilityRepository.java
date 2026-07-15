@@ -21,9 +21,8 @@ public interface RoomAvailabilityRepository extends JpaRepository<RoomAvailabili
 
     List<RoomAvailability> findByBooking_Id(Long bookingId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ra FROM RoomAvailability ra WHERE ra.room.id IN :roomIds AND ra.date >= :checkInDate AND ra.date < :checkOutDate ORDER BY ra.id ASC")
-    List<RoomAvailability> findAndLockAvailabilities(
+    List<RoomAvailability> findAvailabilities(
             @Param("roomIds") List<Long> roomIds,
             @Param("checkInDate") LocalDate checkInDate,
             @Param("checkOutDate") LocalDate checkOutDate

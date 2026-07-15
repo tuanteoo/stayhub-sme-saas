@@ -24,6 +24,8 @@ services:
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
     env_file:
       - .env
+    depends_on:
+      - rabbitmq
     restart: always
 
   app_green:
@@ -39,6 +41,8 @@ services:
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
     env_file:
       - .env
+    depends_on:
+      - rabbitmq
     restart: always
 
   nginx:

@@ -340,6 +340,7 @@ public class VNPayStrategy implements PaymentStrategy {
         vnp_Params.put("vnp_Locale", "vn");
         vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
         vnp_Params.put("vnp_IpAddr", VNPayConfig.getIpAddress(request));
+        log.info("DEBUG - vnp_IpAddr gửi cho VNPay là: {}", VNPayConfig.getIpAddress(request));
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");

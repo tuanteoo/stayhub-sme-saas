@@ -202,8 +202,9 @@ public class VNPayStrategy implements PaymentStrategy {
             String vnp_TransactionDate = originalPayment.getPayDate();
             String vnp_CreateBy = "SYSTEM";
 
-            Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+            Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT-7"));
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+            formatter.setTimeZone(TimeZone.getTimeZone("Etc/GMT-7"));
             String vnp_CreateDate = formatter.format(cld.getTime());
 
             String vnp_IpAddr = "127.0.0.1";
@@ -342,8 +343,9 @@ public class VNPayStrategy implements PaymentStrategy {
         vnp_Params.put("vnp_IpAddr", VNPayConfig.getIpAddress(request));
         log.info("DEBUG - vnp_IpAddr gửi cho VNPay là: {}", VNPayConfig.getIpAddress(request));
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT-7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        formatter.setTimeZone(TimeZone.getTimeZone("Etc/GMT-7"));
         String vnp_CreateDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
 

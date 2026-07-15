@@ -62,14 +62,29 @@ jobs:
             if docker ps | grep -q "stayhub-backend-blue"; then
                 echo "Triển khai Green..."
                 docker compose up -d app_green
-                sleep 25
+                
+                echo "Đợi app_green khởi động..."
+                for i in {1..24}; do
+                    if curl -s http://localhost:8081 > /dev/null; then echo "app_green đã sẵn sàng!"; break; fi
+                    sleep 5
+                done
+                
+                echo "Reloading Nginx trên Ubuntu..."
+                sudo systemctl reload nginx
+                
                 docker compose stop app_blue
             else
                 echo "Triển khai Blue..."
                 docker compose up -d app_blue
-                sleep 25
+                
+                echo "Đợi app_blue khởi động..."
+                for i in {1..24}; do
+                    if curl -s http://localhost:8080 > /dev/null; then echo "app_blue đã sẵn sàng!"; break; fi
+                    sleep 5
+                done
+                
+                echo "Reloading Nginx trên Ubuntu..."
+                sudo systemctl reload nginx
+                
                 docker compose stop app_green
             fi
-
-            echo "Reloading Nginx trên Ubuntu..."
-            sudo systemctl reload nginx

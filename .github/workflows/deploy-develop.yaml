@@ -66,7 +66,6 @@ jobs:
                 echo "Đang chờ 20 giây để hệ thống Green khởi động..."
                 sleep 20
             
-                docker compose exec nginx nginx -s reload
                 docker compose stop app_blue
                 echo "Cập nhật thành công! Môi trường Green đang phục vụ."
             else
@@ -75,8 +74,7 @@ jobs:
             
                 echo "Đang chờ 20 giây để hệ thống Blue khởi động..."
                 sleep 20
-            
-                docker compose exec nginx nginx -s reload
+        
                 docker compose stop app_green
                 echo "Cập nhật thành công! Môi trường Blue đang phục vụ."
             fi

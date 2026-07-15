@@ -64,27 +64,39 @@ jobs:
                 docker compose up -d app_green
                 
                 echo "Đợi app_green khởi động..."
+                healthy=false
                 for i in {1..24}; do
-                    if curl -s http://localhost:8081 > /dev/null; then echo "app_green đã sẵn sàng!"; break; fi
+                    if curl -s http://localhost:8081 > /dev/null; then echo "app_green đã sẵn sàng!"; healthy=true; break; fi
                     sleep 5
                 done
                 
-                echo "Reloading Nginx trên Ubuntu..."
-                sudo systemctl reload nginx
-                
-                docker compose stop app_blue
+                if [ "$healthy" = true ]; then
+                    echo "Reloading Nginx trên Ubuntu..."
+                    sudo systemctl reload nginx
+                    docker compose stop app_blue
+                else
+                    echo "LỖI: app_green không thể khởi động thành công (có thể do thiếu RAM). Hủy triển khai."
+                    docker compose stop app_green
+                    exit 1
+                fi
             else
                 echo "Triển khai Blue..."
                 docker compose up -d app_blue
                 
                 echo "Đợi app_blue khởi động..."
+                healthy=false
                 for i in {1..24}; do
-                    if curl -s http://localhost:8080 > /dev/null; then echo "app_blue đã sẵn sàng!"; break; fi
+                    if curl -s http://localhost:8080 > /dev/null; then echo "app_blue đã sẵn sàng!"; healthy=true; break; fi
                     sleep 5
                 done
                 
-                echo "Reloading Nginx trên Ubuntu..."
-                sudo systemctl reload nginx
-                
-                docker compose stop app_green
+                if [ "$healthy" = true ]; then
+                    echo "Reloading Nginx trên Ubuntu..."
+                    sudo systemctl reload nginx
+                    docker compose stop app_green
+                else
+                    echo "LỖI: app_blue không thể khởi động thành công (có thể do thiếu RAM). Hủy triển khai."
+                    docker compose stop app_blue
+                    exit 1
+                fi
             fi
